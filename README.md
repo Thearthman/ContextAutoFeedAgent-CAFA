@@ -1,51 +1,41 @@
-# LLM Playground: Advanced Memory & Multi-Format Processing
+# LLM Playground: Gemma Model Chat Interface
 
-A comprehensive playground for experimenting with Large Language Models, focusing on long-term memory systems, RAG (Retrieval-Augmented Generation), and multi-format document processing capabilities.
+A high-performance playground for experimenting with Google's Gemma models, featuring optimized quantization and streaming chat interfaces.
 
 ## 🎯 Project Overview
 
-This playground is designed for developing and testing advanced LLM capabilities, specifically:
+This playground provides production-ready implementations for:
 
-- **Long-term Memory Systems**: Persistent memory management and retrieval
-- **RAG Implementation**: Retrieval-Augmented Generation with various data sources
-- **Multi-format Document Processing**: Support for Word, PDF, and other document formats
-- **Model Integration**: Built around Google's Gemma-3-27B-IT model
+- **Gemma Model Integration**: Optimized implementations for Gemma-3-12B and Gemma-3-27B models
+- **Advanced Quantization**: 4-bit and 8-bit quantization for memory efficiency
+- **Real-time Streaming**: Token-by-token streaming chat interfaces
+- **Hardware Optimization**: RTX 5090 optimized with bfloat16 support
 
 ## 🚀 Features
 
-### Core Capabilities
-- [x] Google Gemma-3-27B-IT model integration
-- [ ] Long-term memory storage and retrieval
-- [ ] Vector database integration for RAG
-- [ ] Document processing pipeline
-- [ ] Conversation context management
+### ✅ Implemented
+- **Gemma-3-12B with 8-bit quantization** (~6-8GB VRAM)
+- **Gemma-3-27B with 4-bit quantization** (~7-10GB VRAM) ⭐ **Primary**
+- **Real-time streaming chat** with token-by-token output
+- **Conversation history management** with context limits
+- **GPU optimization** for RTX 5090 with bfloat16 support
+- **Automatic caching** to G drive (`/mnt/g/huggingface`)
+- **Debug tools** for troubleshooting model issues
 
-### Document Processing
-- [ ] PDF text extraction and processing
-- [ ] Microsoft Word document handling
-- [ ] Text chunking and embedding generation
-- [ ] Metadata extraction and indexing
-
-### Memory Systems
-- [ ] Episodic memory for conversation history
-- [ ] Semantic memory for knowledge storage
-- [ ] Working memory for active context
-- [ ] Memory consolidation and retrieval mechanisms
-
-### RAG Components
-- [ ] Document ingestion pipeline
-- [ ] Vector similarity search
-- [ ] Context-aware retrieval
-- [ ] Source attribution and citation
+### 🎯 Primary Configuration
+- **Model**: Gemma-3-27B-IT with 4-bit quantization
+- **Memory usage**: ~7-10GB VRAM (vs ~54GB full precision)
+- **Quality**: Highest available with efficient memory usage
+- **Speed**: Fast inference with streaming output
 
 ## 🛠️ Technology Stack
 
-- **LLM Model**: Google Gemma-3-27B-IT
-- **Vector Database**: ChromaDB / Pinecone (TBD)
-- **Document Processing**: PyPDF2, python-docx, Unstructured
-- **Embeddings**: sentence-transformers
-- **Framework**: Python with FastAPI/Streamlit for UI
-- **Storage**: SQLite for metadata, Vector DB for embeddings
+- **LLM Model**: Google Gemma-3-27B-IT (primary), Gemma-3-12B-IT (alternative)
+- **Quantization**: BitsAndBytes (4-bit/8-bit)
+- **Inference**: HuggingFace Transformers with streaming
+- **Hardware**: NVIDIA RTX 5090 (34.2GB VRAM)
+- **Precision**: bfloat16 compute optimized
+- **Cache**: G drive (`/mnt/g/huggingface`) for model storage
 
 ## 📋 Prerequisites
 
@@ -102,19 +92,25 @@ llm-playground/
 
 ## 🚀 Quick Start
 
-1. **Model Setup**:
+1. **Activate virtual environment**:
 ```bash
-python src/models/setup_gemma.py
+source venv/bin/activate.fish  # Fish shell
+# or source venv/bin/activate   # Bash shell
 ```
 
-2. **Initialize Memory System**:
+2. **Install dependencies**:
 ```bash
-python src/memory/initialize.py
+pip install -r requirements.txt
 ```
 
-3. **Start the Playground**:
+3. **Start primary chat interface** (Gemma-3-27B with 4-bit):
 ```bash
-python src/main.py
+python src/streaming_chat_27B_Q4.py
+```
+
+4. **Alternative: 12B model** (for faster loading):
+```bash
+python src/streaming_chat.py
 ```
 
 ## 🧪 Usage Examples
