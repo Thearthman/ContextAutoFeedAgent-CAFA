@@ -1,4 +1,6 @@
-# Context Auto Feed Agent - CAFA
+# LLM Playground: Gemma Model Chat Interface
+
+A high-performance playground for experimenting with Google's Gemma models, featuring optimized quantization and streaming chat interfaces.
 
 ## 🎯 Project Overview
 
