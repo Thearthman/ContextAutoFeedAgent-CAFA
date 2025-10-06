@@ -2,12 +2,14 @@
 
 ## 🎯 Project Overview
 
-This playground provides production-ready implementations for:
+A high-performance LLM playground featuring Google's Gemma models with optimized quantization and a **persistent model server architecture** for rapid development iteration.
 
+### Core Features:
 - **Gemma Model Integration**: Optimized implementations for Gemma-3-12B and Gemma-3-27B models
 - **Advanced Quantization**: 4-bit and 8-bit quantization for memory efficiency
 - **Real-time Streaming**: Token-by-token streaming chat interfaces
 - **Hardware Optimization**: RTX 5090 optimized with bfloat16 support
+- **Server/Client Architecture**: Load model once, test code changes instantly ⭐ **NEW**
 
 ## 🚀 Features
 
@@ -18,7 +20,9 @@ This playground provides production-ready implementations for:
 - **Conversation history management** with context limits
 - **GPU optimization** for RTX 5090 with bfloat16 support
 - **Automatic caching** to G drive (`/mnt/g/huggingface`)
-- **Debug tools** for troubleshooting model issues
+- **Persistent model server** for rapid development (Flask API) ⭐ **NEW**
+- **Fast client interface** with <1 second restart time ⭐ **NEW**
+- **Markdown rendering support** (in development)
 
 ### 🎯 Primary Configuration
 - **Model**: Gemma-3-27B-IT with 4-bit quantization
@@ -34,6 +38,9 @@ This playground provides production-ready implementations for:
 - **Hardware**: NVIDIA RTX 5090 (34.2GB VRAM)
 - **Precision**: bfloat16 compute optimized
 - **Cache**: G drive (`/mnt/g/huggingface`) for model storage
+- **Server**: Flask HTTP API for persistent model hosting
+- **Python**: 3.12.3 (WSL)
+- **CUDA**: 12.1
 
 ## 📋 Prerequisites
 
@@ -47,24 +54,27 @@ This playground provides production-ready implementations for:
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd llm-playground
+cd Person
 ```
 
 2. Create a virtual environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3.12 -m venv venv
+source venv/bin/activate.fish  # Fish shell
+# or source venv/bin/activate   # Bash shell
 ```
 
 3. Install dependencies:
 ```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
+4. Environment is auto-configured in `venv/bin/activate.fish`:
+```fish
+set -gx HF_HOME /mnt/g/huggingface
+set -gx TRANSFORMERS_CACHE /mnt/g/huggingface
+set -gx HF_DATASETS_CACHE /mnt/g/huggingface
 ```
 
 ## 🏗️ Project Structure
@@ -90,74 +100,165 @@ llm-playground/
 
 ## 🚀 Quick Start
 
-1. **Activate virtual environment**:
+### Method 1: Traditional (Simple, slower iteration)
+
 ```bash
-source venv/bin/activate.fish  # Fish shell
-# or source venv/bin/activate   # Bash shell
+source venv/bin/activate.fish
+python src/streaming_chat_27B_Q4.py  # Takes 2-6 min to load
 ```
 
-2. **Install dependencies**:
+### Method 2: Server/Client (Recommended for development) ⭐
+
+**Terminal 1 - Start Server (once):**
 ```bash
-pip install -r requirements.txt
+source venv/bin/activate.fish
+python src/model_server.py  # Takes 2-6 min initially, then stays loaded
 ```
 
-3. **Start primary chat interface** (Gemma-3-27B with 4-bit):
+**Terminal 2 - Use Client (instant restarts):**
 ```bash
-python src/streaming_chat_27B_Q4.py
+source venv/bin/activate.fish
+python src/model_client.py  # <1 second startup!
 ```
 
-4. **Alternative: 12B model** (for faster loading):
-```bash
-python src/streaming_chat.py
-```
+Now you can:
+- Modify `model_client.py` and restart instantly
+- Test different parameters without reloading
+- Send API requests from custom scripts
+
+**See `SERVER_SETUP.md` for complete documentation.**
 
 ## 🧪 Usage Examples
 
-### Basic Chat with Memory
+### Direct Model Usage
 ```python
-from src.models import GemmaModel
-from src.memory import LongTermMemory
+from src.main import GemmaStreamingChat
 
-model = GemmaModel()
-memory = LongTermMemory()
+# Initialize model (takes 2-6 min)
+chat = GemmaStreamingChat()
 
-response = model.chat("Tell me about machine learning", memory_context=memory.retrieve())
-memory.store(response)
+# Generate response with streaming
+response = chat.generate_response(
+    "Explain quantum computing",
+    max_new_tokens=500,
+    temperature=0.7
+)
 ```
 
-### Document Processing
+### Server/Client API Usage
 ```python
-from src.processing import DocumentProcessor
+from src.model_client import GemmaClient
 
-processor = DocumentProcessor()
-chunks = processor.process_pdf("document.pdf")
-embeddings = processor.generate_embeddings(chunks)
+# Connect to running server (instant)
+client = GemmaClient()
+
+# Generate response
+response = client.generate("What is quantum computing?")
+print(response)
+
+# Clear history
+client.clear_history()
+
+# Get statistics
+stats = client.get_stats()
 ```
 
-### RAG Query
+### Quick Testing Script
 ```python
-from src.rag import RAGSystem
+# quick_test.py
+from src.model_client import GemmaClient
 
-rag = RAGSystem()
-rag.ingest_document("research_paper.pdf")
-response = rag.query("What are the main findings?")
+client = GemmaClient()
+
+# Test multiple prompts rapidly
+prompts = ["Question 1", "Question 2", "Question 3"]
+for prompt in prompts:
+    response = client.generate(prompt, max_new_tokens=200)
+    print(f"Q: {prompt}\nA: {response}\n")
+```
+
+### HTTP API (cURL)
+```bash
+# Generate response
+curl -X POST http://localhost:5000/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Hello!", "max_new_tokens": 100}'
+
+# Check server health
+curl http://localhost:5000/health
+
+# Get statistics
+curl http://localhost:5000/stats
+```
+
+## ⚡ Development Benefits
+
+### Server/Client Architecture Advantages:
+
+**Before (Traditional):**
+- Each code change = 2-6 minute model reload
+- 3 tests = 6-18 minutes total 😫
+- GPU memory cleared on every run
+- Slow iteration cycle
+
+**After (Server/Client):**
+- Model loads once (2-6 min) ⚡
+- Code changes = <1 second restart
+- 3 tests = 2-6 minutes total (first load only) 🚀
+- GPU memory stays loaded
+- Rapid iteration cycle
+
+**Example workflow:**
+```bash
+# Day 1, 9:00 AM - Start server
+python src/model_server.py  # 3 min load
+
+# 9:03 AM - Test prompt 1
+python src/model_client.py  # <1 sec
+
+# 9:05 AM - Modify code, test prompt 2  
+python src/model_client.py  # <1 sec
+
+# 9:07 AM - Modify code, test prompt 3
+python src/model_client.py  # <1 sec
+
+# Total time: ~3 minutes vs ~9 minutes traditional!
 ```
 
 ## 🔬 Experiments
 
 This playground supports various experimental setups:
 
-1. **Memory Persistence**: Test different memory architectures
-2. **RAG Optimization**: Compare retrieval strategies
-3. **Multi-modal Input**: Process various document formats
-4. **Context Management**: Experiment with conversation flow
+1. **Rapid Prompt Engineering**: Test variations instantly with server/client
+2. **Parameter Tuning**: Compare temperature/top_p/top_k combinations quickly
+3. **Model Comparison**: Easy A/B testing between configurations
+4. **Integration Testing**: HTTP API for external tool integration
 
 ## 📊 Monitoring & Evaluation
 
-- Memory usage tracking
+- Memory usage tracking (via GPU memory display in model info)
 - Response quality metrics
-- Retrieval accuracy measurements
+- Conversation statistics (turns, tokens, sessions)
 - Performance benchmarking
+- Server health checks (`/health` endpoint)
+- Real-time token streaming for immediate feedback
+
+## 📁 Key Files
+
+### Core Implementation
+- `src/main.py` - OOP streaming chat with optimizations
+- `src/streaming_chat_27B_Q4.py` - Standalone 27B Q4 interface
+- `src/streaming_chat.py` - Standalone 12B 8-bit interface
+
+### Server/Client Architecture ⭐
+- `src/model_server.py` - Persistent Flask API server
+- `src/model_client.py` - Fast client with instant restart
+- `SERVER_SETUP.md` - Complete server/client documentation
+
+### Configuration
+- `requirements.txt` - All dependencies with versions
+- `venv/bin/activate.fish` - Environment setup with HF cache paths
+- `MEMORY.md` - Project knowledge base and troubleshooting
 
 ## 🤝 Contributing
 
@@ -177,10 +278,52 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Retrieval-Augmented Generation](https://arxiv.org/abs/2005.11401)
 - [Long-term Memory in AI Systems](https://arxiv.org/abs/2301.04589)
 
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Server won't start:**
+```bash
+# Check if port is in use
+lsof -i :5000
+
+# Kill existing process
+kill -9 <PID>
+```
+
+**Client can't connect:**
+```bash
+# Verify server is running
+curl http://localhost:5000/health
+```
+
+**Python venv broken:**
+```bash
+# Recreate with WSL Python
+rm -rf venv
+python3.12 -m venv venv
+source venv/bin/activate.fish
+pip install -r requirements.txt
+```
+
+**Import errors:**
+- Always run from project root: `python src/model_server.py`
+- Never run from inside src/: `cd src && python model_server.py` ❌
+
+**See `MEMORY.md` for complete troubleshooting guide.**
+
 ## 📞 Support
 
-For questions and support, please open an issue or reach out via [contact method].
+For questions and support, please open an issue or check `MEMORY.md` for common solutions.
 
 ---
 
-**Status**: 🚧 In Development | **Last Updated**: $(date +%Y-%m-%d)
+**Status**: ✅ Production Ready | **Last Updated**: October 2025
+
+### Recent Updates:
+- ✅ Server/Client architecture for rapid development
+- ✅ Fixed Python venv (WSL Python 3.12)
+- ✅ Complete requirements.txt with all dependencies
+- ✅ Fixed deprecation warnings (dtype vs torch_dtype)
+- 🚧 UI interface with markdown rendering (in progress)
+- 📋 LaTeX rendering support (planned)

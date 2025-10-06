@@ -1,11 +1,12 @@
 # MEMORY.md - Essential Project Information
 
-**Last Updated**: September 2024  
-**Primary Model**: Gemma-3-27B-IT with 4-bit quantization
+**Last Updated**: October 2025  
+**Primary Model**: Gemma-3-27B-IT with 4-bit quantization  
+**Development Mode**: Server/Client architecture for rapid iteration
 
 ## 🎯 Project Summary
 
-This is an LLM playground focused on Google's Gemma models with optimized quantization for efficient inference on RTX 5090 GPU. The primary configuration uses Gemma-3-27B with 4-bit quantization for the best quality/memory balance.
+This is an LLM playground focused on Google's Gemma models with optimized quantization for efficient inference on RTX 5090 GPU. Features a persistent model server architecture that loads the model once and keeps it in GPU memory, enabling instant code testing without 2-6 minute reload times.
 
 ## 🖥️ Hardware Setup
 
@@ -66,15 +67,22 @@ quantization_config = BitsAndBytesConfig(
 ## 📦 Key Dependencies
 
 ```
-torch>=2.1.0
-transformers>=4.35.0
-accelerate>=0.24.0
-bitsandbytes>=0.41.0
-sentencepiece>=0.1.99
+torch>=2.8.0 (CUDA 12.1)
+transformers>=4.56.0
+accelerate>=1.10.0
+bitsandbytes>=0.47.0
+sentencepiece>=0.2.1
+flask>=3.0.0 (for model server)
+```
+
+**Installation:**
+```bash
+pip install -r requirements.txt
 ```
 
 ## 🚀 Quick Start Commands
 
+### Option 1: Direct Chat (Traditional)
 ```bash
 # Navigate to project
 cd "/mnt/p/Work/Personal/Person"
@@ -82,15 +90,27 @@ cd "/mnt/p/Work/Personal/Person"
 # Activate environment
 source venv/bin/activate.fish
 
-# Run primary model (27B Q4)
+# Run primary model (27B Q4) - Takes 2-6 min to load
 python src/streaming_chat_27B_Q4.py
 
-# Run alternative (12B 8-bit)
-python src/streaming_chat.py
-
-# Debug issues
-python src/debug_gemma.py
+# Run OOP version with optimizations
+python src/main.py
 ```
+
+### Option 2: Server/Client Mode (Recommended for Development) ⭐
+```bash
+# Terminal 1: Start model server (load once, keeps running)
+source venv/bin/activate.fish
+python src/model_server.py  # Takes 2-6 min initially
+
+# Terminal 2: Use fast client (restarts instantly)
+source venv/bin/activate.fish
+python src/model_client.py  # <1 second startup
+
+# Modify model_client.py and restart instantly!
+```
+
+**See `SERVER_SETUP.md` for complete server/client documentation.**
 
 ## 🎮 Chat Commands
 
@@ -109,10 +129,18 @@ python src/debug_gemma.py
 - **Loading time**: 2-6 minutes for 27B model (normal)
 - **Token speed**: ~15-25 tokens/sec expected
 - **Memory usage**: Monitor with GPU memory display
+- **Post-generation delay**: 30-50 seconds after streaming completes (due to thread cleanup)
 
 ### Environment Issues
-- **bfloat16 errors**: RTX 5090 supports it, check dtype conversion
+- **bfloat16 errors**: RTX 5090 supports it, use `dtype=torch.bfloat16` (not `torch_dtype`)
 - **Cache location**: Ensure G drive is mounted at `/mnt/g/`
+- **Python venv broken**: Recreate with WSL Python (`python3.12 -m venv venv`)
+- **Module import errors**: Run from project root, not inside src/
+
+### Server/Client Issues
+- **Server won't start**: Check if port 5000 is in use (`lsof -i :5000`)
+- **Client can't connect**: Ensure server is running first
+- **Model stays loaded**: Server keeps model in GPU until shutdown
 
 ## 📊 Performance Benchmarks
 
@@ -125,11 +153,20 @@ python src/debug_gemma.py
 
 ```
 src/
-├── streaming_chat_27B_Q4.py  # Primary 27B Q4 interface ⭐
-├── streaming_chat.py         # 12B 8-bit interface
-├── debug_gemma.py           # Debugging tool
-├── main.py                  # Original HF example
-└── chat.py                  # Non-streaming version
+├── streaming_chat_27B_Q4.py  # Primary 27B Q4 interface (standalone)
+├── streaming_chat.py         # 12B 8-bit interface  
+├── main.py                   # OOP version with optimizations ⭐
+├── model_server.py           # Persistent model server (Flask API) ⭐
+├── model_client.py           # Fast client for server (instant restart) ⭐
+├── chat.py                   # Non-streaming version
+└── debug_gemma.py            # Debugging tool (deleted)
+
+Root files:
+├── requirements.txt          # All dependencies with versions
+├── SERVER_SETUP.md           # Server/client documentation
+├── MEMORY.md                 # This file - project knowledge
+├── README.md                 # Project overview
+└── packages_backup.txt       # Backup of installed packages
 ```
 
 ## 🔄 Git Status
@@ -145,12 +182,40 @@ src/
 - **Output**: Long-form responses (1000 tokens for 27B)
 - **No comparison files**: Stick to requested implementations only
 
-## 💡 Next Steps
+## 💡 Development Workflow
 
-1. Use 27B Q4 as primary interface
-2. Test performance with various conversation lengths
-3. Monitor memory usage patterns
-4. Future: Implement memory systems and RAG (when requested)
+### For Production Use:
+```bash
+python src/streaming_chat_27B_Q4.py  # Standalone, simple
+python src/main.py                    # OOP version
+```
+
+### For Development/Testing (Recommended):
+```bash
+# Terminal 1 (leave running):
+python src/model_server.py
+
+# Terminal 2 (modify & restart rapidly):
+python src/model_client.py
+```
+
+## 📋 Todo List
+
+- [x] Fix Python venv (WSL Python 3.12)
+- [x] Create requirements.txt
+- [x] Fix torch_dtype deprecation warnings
+- [x] Implement model server/client architecture
+- [x] Document server setup
+- [ ] Add LaTeX rendering support to UI
+- [ ] Implement Flash Attention 2 optimization
+- [ ] Create floating window UI with markdown rendering
+
+## 🎯 Recent Improvements
+
+- **Server/Client Architecture**: Load model once, test code instantly
+- **Fixed venv**: Now uses WSL Python 3.12 (was broken by Microsoft Store Python)
+- **Optimized imports**: Fixed deprecation warnings (dtype vs torch_dtype)
+- **Better documentation**: Added SERVER_SETUP.md and requirements.txt
 
 ---
 
