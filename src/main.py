@@ -24,7 +24,7 @@ class GemmaStreamingChat:
     
     def __init__(
         self, 
-        model_id: str = "google/gemma-3-27b-it",
+        model_id: str = "google/gemma-3-12b-it",
         max_history_turns: int = 30,
         system_prompt: str = """You are a highly knowledgeable personal AI assistant with expertise across many domains. 
         Provide accurate, thoughtful responses as short and concise as possible."""
