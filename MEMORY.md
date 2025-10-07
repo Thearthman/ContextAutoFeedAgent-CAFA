@@ -129,7 +129,7 @@ python src/model_client.py  # <1 second startup
 - **Loading time**: 2-6 minutes for 27B model (normal)
 - **Token speed**: ~15-25 tokens/sec expected
 - **Memory usage**: Monitor with GPU memory display
-- **Post-generation delay**: 30-50 seconds after streaming completes (due to thread cleanup)
+- **Response latency**: Instant after streaming completes (fixed by using daemon threads)
 
 ### Environment Issues
 - **bfloat16 errors**: RTX 5090 supports it, use `dtype=torch.bfloat16` (not `torch_dtype`)

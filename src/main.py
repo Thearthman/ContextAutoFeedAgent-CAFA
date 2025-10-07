@@ -224,9 +224,10 @@ class GemmaStreamingChat:
             
             print("Assistant: ", end="", flush=True)
             
-            # Start generation in background thread
+            # Start generation in background thread (daemon=True means it won't block)
             generation_thread = threading.Thread(
-                target=lambda: self.model.generate(**generation_kwargs)
+                target=lambda: self.model.generate(**generation_kwargs),
+                daemon=True
             )
             generation_thread.start()
             
@@ -237,9 +238,8 @@ class GemmaStreamingChat:
                     print(new_text, end="", flush=True)
                     generated_text += new_text
             
-            generation_thread.join()
-            # A delay happened before this
-            print("end of response")  # New line after response 
+            # Don't wait for thread - all tokens already received via streamer
+            print()  # New line after response 
             
             # Update conversation history
             self._update_conversation_history(user_input, generated_text.strip())
