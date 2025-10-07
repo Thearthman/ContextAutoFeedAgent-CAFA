@@ -25,23 +25,23 @@ class MarkdownRenderer:
         self.text_widget = text_widget
         self._configure_tags()
     
-    def _configure_tags(self):
-        """Configure text tags for markdown styling."""
-        # Fonts
+    def _configure_tags(self, font_size=11):
+        """Configure text tags for markdown styling with dark theme."""
+        # Fonts with configurable size
         default_font = font.nametofont("TkDefaultFont")
-        bold_font = font.Font(family=default_font.cget("family"), size=default_font.cget("size"), weight="bold")
-        italic_font = font.Font(family=default_font.cget("family"), size=default_font.cget("size"), slant="italic")
-        code_font = font.Font(family="Courier", size=default_font.cget("size"))
-        heading_font = font.Font(family=default_font.cget("family"), size=default_font.cget("size")+4, weight="bold")
+        bold_font = font.Font(family=default_font.cget("family"), size=font_size, weight="bold")
+        italic_font = font.Font(family=default_font.cget("family"), size=font_size, slant="italic")
+        code_font = font.Font(family="Consolas", size=font_size-1)
+        heading_font = font.Font(family=default_font.cget("family"), size=font_size+4, weight="bold")
         
-        # Configure tags
+        # Configure tags for dark theme
         self.text_widget.tag_configure("bold", font=bold_font)
         self.text_widget.tag_configure("italic", font=italic_font)
-        self.text_widget.tag_configure("code", font=code_font, background="#f0f0f0", foreground="#c7254e")
-        self.text_widget.tag_configure("code_block", font=code_font, background="#f5f5f5", foreground="#333333")
-        self.text_widget.tag_configure("heading", font=heading_font, foreground="#2c3e50")
-        self.text_widget.tag_configure("link", foreground="#3498db", underline=True)
-        self.text_widget.tag_configure("quote", foreground="#7f8c8d", lmargin1=20, lmargin2=20)
+        self.text_widget.tag_configure("code", font=code_font, background="#3c3c3c", foreground="#f48771")
+        self.text_widget.tag_configure("code_block", font=code_font, background="#2d2d2d", foreground="#d4d4d4")
+        self.text_widget.tag_configure("heading", font=heading_font, foreground="#4ec9b0")
+        self.text_widget.tag_configure("link", foreground="#569cd6", underline=True)
+        self.text_widget.tag_configure("quote", foreground="#858585", lmargin1=20, lmargin2=20)
         self.text_widget.tag_configure("list_item", lmargin1=20, lmargin2=20)
     
     def render(self, markdown_text: str):
@@ -142,6 +142,7 @@ class FloatingChatUI:
         self.server_url = server_url
         self.conversation_history = []
         self.always_on_top = False
+        self.font_size = 11  # Default font size
         
         # Create main window
         self.root = tk.Tk()
@@ -151,15 +152,22 @@ class FloatingChatUI:
         # Make window resizable and set minimum size
         self.root.minsize(600, 400)
         
-        # Modern color scheme
-        self.bg_color = "#ffffff"
-        self.secondary_bg = "#f5f5f5"
-        self.accent_color = "#007bff"
-        self.text_color = "#333333"
-        self.user_msg_bg = "#e3f2fd"
-        self.assistant_msg_bg = "#f5f5f5"
+        # Dark theme color scheme with acrylic effect
+        self.bg_color = "#1f1e33"  # Dark background
+        self.secondary_bg = "#2d2d2d"  # Slightly lighter dark
+        self.accent_color = "#0078d4"  # Modern blue accent
+        self.text_color = "#e0e0e0"  # Light text
+        self.user_msg_bg = "#2b5278"  # Dark blue for user messages
+        self.assistant_msg_bg = "#2d2d2d"  # Dark grey for assistant
+        self.border_color = "#3f3f3f"  # Subtle borders
         
         self.root.configure(bg=self.bg_color)
+        
+        # Try to enable acrylic/transparency effect (Windows 11)
+        try:
+            self.root.attributes('-alpha', 0.50)  # Slight transparency
+        except:
+            pass
         
         # Check server connection
         if not self._check_server():
@@ -205,14 +213,57 @@ class FloatingChatUI:
         )
         title_label.pack(side=tk.LEFT, padx=15)
         
+        # Font size controls
+        tk.Label(
+            top_frame,
+            text="A",
+            font=("Arial", 8),
+            fg="white",
+            bg=self.accent_color
+        ).pack(side=tk.RIGHT, padx=2)
+        
+        font_minus_btn = tk.Button(
+            top_frame,
+            text="-",
+            command=self._decrease_font,
+            bg="#2d2d2d",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief=tk.FLAT,
+            width=2,
+            cursor="hand2"
+        )
+        font_minus_btn.pack(side=tk.RIGHT, padx=2)
+        
+        font_plus_btn = tk.Button(
+            top_frame,
+            text="+",
+            command=self._increase_font,
+            bg="#2d2d2d",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief=tk.FLAT,
+            width=2,
+            cursor="hand2"
+        )
+        font_plus_btn.pack(side=tk.RIGHT, padx=2)
+        
+        tk.Label(
+            top_frame,
+            text="A",
+            font=("Arial", 12),
+            fg="white",
+            bg=self.accent_color
+        ).pack(side=tk.RIGHT, padx=2)
+        
         # Pin button (always on top)
         self.pin_btn = tk.Button(
             top_frame,
-            text="📌",
+            text="Pin",
             command=self._toggle_always_on_top,
-            bg="white",
-            fg=self.accent_color,
-            font=("Arial", 10),
+            bg="#2d2d2d",
+            fg="white",
+            font=("Segoe UI", 9),
             relief=tk.FLAT,
             padx=10,
             cursor="hand2"
@@ -222,11 +273,11 @@ class FloatingChatUI:
         # Clear button
         clear_btn = tk.Button(
             top_frame,
-            text="🧹 Clear",
+            text="Clear",
             command=self._clear_history,
-            bg="white",
-            fg=self.accent_color,
-            font=("Arial", 10),
+            bg="#2d2d2d",
+            fg="white",
+            font=("Segoe UI", 9),
             relief=tk.FLAT,
             padx=10,
             cursor="hand2"
@@ -236,11 +287,11 @@ class FloatingChatUI:
         # Stats button
         stats_btn = tk.Button(
             top_frame,
-            text="📊 Stats",
+            text="Stats",
             command=self._show_stats,
-            bg="white",
-            fg=self.accent_color,
-            font=("Arial", 10),
+            bg="#2d2d2d",
+            fg="white",
+            font=("Segoe UI", 9),
             relief=tk.FLAT,
             padx=10,
             cursor="hand2"
@@ -251,24 +302,28 @@ class FloatingChatUI:
         chat_frame = tk.Frame(self.root, bg=self.bg_color)
         chat_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Scrolled text for chat
+        # Scrolled text for chat with dark theme
         self.chat_display = scrolledtext.ScrolledText(
             chat_frame,
             wrap=tk.WORD,
-            font=("Arial", 11),
+            font=("Segoe UI", self.font_size),
             bg=self.bg_color,
             fg=self.text_color,
-            relief=tk.FLAT,
+            relief=tk.SOLID,
+            borderwidth=1,
+            highlightthickness=0,
+            insertbackground=self.text_color,  # Cursor color
+            selectbackground="#264f78",  # Selection color
             padx=10,
             pady=10,
             state=tk.DISABLED
         )
         self.chat_display.pack(fill=tk.BOTH, expand=True)
         
-        # Configure tags for messages
+        # Configure tags for messages with dark theme
         self.chat_display.tag_configure("user", background=self.user_msg_bg, spacing1=5, spacing3=5, lmargin1=10, lmargin2=10, rmargin=10)
         self.chat_display.tag_configure("assistant", background=self.assistant_msg_bg, spacing1=5, spacing3=5, lmargin1=10, lmargin2=10, rmargin=10)
-        self.chat_display.tag_configure("system", foreground="#7f8c8d", font=("Arial", 9, "italic"))
+        self.chat_display.tag_configure("system", foreground="#858585", font=("Segoe UI", self.font_size-2, "italic"))
         
         # Initialize markdown renderer
         self.md_renderer = MarkdownRenderer(self.chat_display)
@@ -277,14 +332,19 @@ class FloatingChatUI:
         input_frame = tk.Frame(self.root, bg=self.bg_color)
         input_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=10, pady=10)
         
-        # Text input
+        # Text input with dark theme
         self.input_text = tk.Text(
             input_frame,
             height=3,
-            font=("Arial", 11),
+            font=("Segoe UI", self.font_size),
             wrap=tk.WORD,
             relief=tk.SOLID,
             borderwidth=1,
+            bg=self.secondary_bg,
+            fg=self.text_color,
+            insertbackground=self.text_color,
+            selectbackground="#264f78",
+            highlightthickness=0,
             padx=10,
             pady=10
         )
@@ -293,27 +353,29 @@ class FloatingChatUI:
         self.input_text.bind("<Shift-Return>", lambda e: None)  # Allow Shift+Enter for newline
         self.input_text.focus()
         
-        # Send button
+        # Send button with dark theme
         send_btn = tk.Button(
             input_frame,
-            text="Send ➤",
+            text="Send →",
             command=self._send_message,
             bg=self.accent_color,
             fg="white",
-            font=("Arial", 12, "bold"),
+            font=("Segoe UI", 11, "bold"),
             relief=tk.FLAT,
             padx=20,
             pady=10,
-            cursor="hand2"
+            cursor="hand2",
+            activebackground="#005a9e",
+            activeforeground="white"
         )
         send_btn.pack(side=tk.RIGHT)
         
-        # Status bar
+        # Status bar with dark theme
         self.status_label = tk.Label(
             self.root,
             text="Ready",
-            font=("Arial", 9),
-            fg="#7f8c8d",
+            font=("Segoe UI", 9),
+            fg="#858585",
             bg=self.secondary_bg,
             anchor=tk.W,
             padx=10,
@@ -352,7 +414,7 @@ class FloatingChatUI:
         thread.start()
     
     def _generate_response(self, prompt: str):
-        """Generate response from the model (runs in background thread)."""
+        """Generate response from the model with streaming (runs in background thread)."""
         try:
             payload = {
                 "prompt": prompt,
@@ -362,17 +424,42 @@ class FloatingChatUI:
                 "top_k": 40
             }
             
+            # Initialize assistant message display
+            self.root.after(0, self._start_assistant_message)
+            
+            # Use streaming endpoint for real-time token display
             response = requests.post(
-                f"{self.server_url}/generate",
+                f"{self.server_url}/generate_stream",
                 json=payload,
-                timeout=300
+                timeout=300,
+                stream=True
             )
             
             if response.status_code == 200:
-                data = response.json()
-                response_text = data.get('response', '')
-                self.root.after(0, self._display_assistant_message, response_text)
-                self.root.after(0, self._update_status, "Ready")
+                # Process Server-Sent Events
+                for line in response.iter_lines():
+                    if line:
+                        line_str = line.decode('utf-8')
+                        if line_str.startswith('data: '):
+                            data = json.loads(line_str[6:])
+                            
+                            if 'error' in data:
+                                self.root.after(0, self._display_system_message, f"Error: {data['error']}")
+                                self.root.after(0, self._update_status, "Error")
+                                break
+                            
+                            token = data.get('token', '')
+                            is_done = data.get('done', False)
+                            
+                            if token:
+                                # Display token immediately
+                                self.root.after(0, self._append_assistant_token, token)
+                            
+                            if is_done:
+                                # Finish the message
+                                self.root.after(0, self._finish_assistant_message)
+                                self.root.after(0, self._update_status, "Ready")
+                                break
             else:
                 self.root.after(0, self._display_system_message, f"Error: {response.status_code}")
                 self.root.after(0, self._update_status, "Error")
@@ -390,8 +477,41 @@ class FloatingChatUI:
         self.chat_display.configure(state=tk.DISABLED)
         self.chat_display.see(tk.END)
     
+    def _start_assistant_message(self):
+        """Start displaying an assistant message (for streaming)."""
+        self.chat_display.configure(state=tk.NORMAL)
+        self.chat_display.insert(tk.END, "\n")
+        self.chat_display.insert(tk.END, "Assistant\n", "system")
+        
+        # Store the starting position for later formatting
+        self._assistant_msg_start = self.chat_display.index(tk.END)
+        self._assistant_msg_text = ""
+        
+        self.chat_display.configure(state=tk.DISABLED)
+    
+    def _append_assistant_token(self, token: str):
+        """Append a token to the streaming assistant message."""
+        self._assistant_msg_text += token
+        
+        self.chat_display.configure(state=tk.NORMAL)
+        
+        # Insert token at the end
+        self.chat_display.insert(tk.END, token)
+        
+        # Apply assistant background to the message
+        self.chat_display.tag_add("assistant", self._assistant_msg_start, tk.END)
+        
+        self.chat_display.configure(state=tk.DISABLED)
+        self.chat_display.see(tk.END)
+    
+    def _finish_assistant_message(self):
+        """Finish the streaming assistant message."""
+        self.chat_display.configure(state=tk.NORMAL)
+        self.chat_display.insert(tk.END, "\n")
+        self.chat_display.configure(state=tk.DISABLED)
+    
     def _display_assistant_message(self, message: str):
-        """Display assistant message with markdown rendering."""
+        """Display assistant message with markdown rendering (non-streaming)."""
         self.chat_display.configure(state=tk.NORMAL)
         self.chat_display.insert(tk.END, "\n")
         self.chat_display.insert(tk.END, "Assistant\n", "system")
@@ -449,6 +569,34 @@ class FloatingChatUI:
         except Exception as e:
             self._display_system_message(f"Error fetching stats: {str(e)}")
     
+    def _increase_font(self):
+        """Increase font size."""
+        if self.font_size < 20:
+            self.font_size += 1
+            self._apply_font_size()
+    
+    def _decrease_font(self):
+        """Decrease font size."""
+        if self.font_size > 8:
+            self.font_size -= 1
+            self._apply_font_size()
+    
+    def _apply_font_size(self):
+        """Apply font size to all text widgets."""
+        # Update chat display
+        self.chat_display.configure(font=("Segoe UI", self.font_size))
+        
+        # Update input text
+        self.input_text.configure(font=("Segoe UI", self.font_size))
+        
+        # Update markdown renderer
+        self.md_renderer._configure_tags(self.font_size)
+        
+        # Update system message tag
+        self.chat_display.tag_configure("system", foreground="#858585", font=("Segoe UI", self.font_size-2, "italic"))
+        
+        self._update_status(f"Font size: {self.font_size}")
+    
     def _toggle_always_on_top(self):
         """Toggle always on top mode."""
         self.always_on_top = not self.always_on_top
@@ -458,7 +606,7 @@ class FloatingChatUI:
             self.pin_btn.config(bg=self.accent_color, fg="white")
             self._update_status("Window pinned (always on top)")
         else:
-            self.pin_btn.config(bg="white", fg=self.accent_color)
+            self.pin_btn.config(bg="#2d2d2d", fg="white")
             self._update_status("Window unpinned")
     
     def run(self):

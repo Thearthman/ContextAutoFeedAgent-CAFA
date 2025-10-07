@@ -43,7 +43,7 @@ cd "/mnt/p/Work/Personal/Person"
 
 ## 🔧 Model Technical Details
 
-### Gemma-3-27B Q4 Configuration (Primary)
+### Gemma-3-27B Q4 Configuration (Primary, but uses 12B during development for better loading time)
 ```python
 quantization_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -243,10 +243,18 @@ python src/floating_ui.py   # <1 sec startup
 
 ## 📊 Performance Benchmarks
 
-| Model | VRAM (Actual) | Load Time | Quality | Tokens/sec | Use Case |
-|-------|---------------|-----------|---------|------------|----------|
-| 27B Q4 | ~16GB | 3-6 min | Highest | 15-25 | Primary |
-| 12B 8-bit | ~6-8GB | ~2 min | High | 20-30 | Quick tests |
+| Model | VRAM (Actual) | Load Time | Quality | Tokens/sec | Streaming | Use Case |
+|-------|---------------|-----------|---------|------------|-----------|----------|
+| 27B Q4 | ~16GB | 3-6 min | Highest | 15-25 | ✅ Real-time | Primary |
+| 12B 8-bit | ~6-8GB | ~2 min | High | 20-30 | ✅ Real-time | Quick tests |
+
+**Streaming Performance:**
+- **Real-time token display**: Tokens appear instantly as generated (no delay!)
+- **UI responsiveness**: Floating UI updates token-by-token via Server-Sent Events
+- **Fixed 20-second delay**: ✅ SOLVED! Custom StoppingCriteria + removed torch.compile()
+  - Model now stops at natural EOS token (11 tokens for "hi", not 1001!)
+  - KV cache cleanup is instant with small token counts
+  - Response completes in ~0.04s/token, no post-generation delays
 
 **Comparison:**
 - 27B full precision would use ~54GB (impossible on RTX 5090)
@@ -275,7 +283,15 @@ Root:
 
 **Implementation notes:**
 - `main.py` is the core - server/client/UI all use it
+  - `generate_response()` - Returns full response (for CLI client)
+  - `generate_response_stream()` - Yields tokens in real-time (for SSE streaming)
+  - `StopOnTokens` - Custom stopping criteria to handle Gemma's `<end_of_turn>` token
+- `model_server.py` has two endpoints:
+  - `/generate` - Returns complete response (blocking)
+  - `/generate_stream` - Streams tokens via Server-Sent Events
+- `floating_ui.py` uses SSE streaming for real-time token display
 - `streaming_chat_*.py` are standalone for simple use
+- **NO torch.compile()** - Removed to prevent graph breaks with quantized models
 - `model_server.py` keeps model in GPU, serves HTTP API
 - `model_client.py` is CLI interface to server
 - `floating_ui.py` is GUI interface with tkinter + markdown

@@ -123,20 +123,24 @@ def generate_stream():
             return jsonify({"error": "Missing 'prompt' in request"}), 400
         
         def generate_sse():
-            """Generate Server-Sent Events."""
+            """Generate Server-Sent Events with real token streaming."""
             try:
-                # For now, just return the full response as one event
-                # (Full streaming would require modifying the model class)
+                print(f"\n📨 Streaming request: {prompt[:50]}...")
+                
+                # Use the new streaming method that yields tokens
                 with model_lock:
-                    response = model.generate_response(
+                    for token in model.generate_response_stream(
                         user_input=prompt,
                         max_new_tokens=data.get('max_new_tokens', 1000),
                         temperature=data.get('temperature', 0.7),
                         top_p=data.get('top_p', 0.9),
                         top_k=data.get('top_k', 40)
-                    )
+                    ):
+                        # Send each token immediately as it's generated
+                        yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
                 
-                yield f"data: {json.dumps({'token': response, 'done': True})}\n\n"
+                # Send completion signal
+                yield f"data: {json.dumps({'token': '', 'done': True})}\n\n"
                 
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"

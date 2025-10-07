@@ -5,10 +5,24 @@ Designed for extensibility and future feature additions.
 """
 
 from transformers import AutoProcessor, Gemma3ForConditionalGeneration, TextIteratorStreamer, BitsAndBytesConfig
+from transformers.generation.stopping_criteria import StoppingCriteria, StoppingCriteriaList
 import torch
 import threading
 import sys
 from typing import List, Dict, Optional, Any
+
+
+class StopOnTokens(StoppingCriteria):
+    """Custom stopping criteria to stop on specific tokens like <end_of_turn>"""
+    def __init__(self, stop_token_ids: List[int]):
+        self.stop_token_ids = stop_token_ids
+    
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        # Check if the last generated token is a stop token
+        for stop_id in self.stop_token_ids:
+            if input_ids[0, -1] == stop_id:
+                return True
+        return False
 
 
 class GemmaStreamingChat:
@@ -82,10 +96,10 @@ class GemmaStreamingChat:
             # offload_folder=None,         # Don't use disk offload unless necessary
             max_memory=None,               # Let auto device mapping handle memory
         )
-        compiled_model = torch.compile(model)
         
-        # Optimized loading parameters for faster initialization
-        self.model = compiled_model.eval()
+        # Use model directly without torch.compile() to avoid delays with quantized models
+        # torch.compile() causes graph breaks and recompilations during streaming
+        self.model = model.eval()
         
         # Load processor
         self.processor = AutoProcessor.from_pretrained(self.model_id)
@@ -93,6 +107,27 @@ class GemmaStreamingChat:
         # Ensure proper tokenizer configuration
         if self.processor.tokenizer.pad_token is None:
             self.processor.tokenizer.pad_token = self.processor.tokenizer.eos_token
+        
+        # DEBUG: Print EOS token info and find stop tokens
+        print(f"🔍 EOS token ID: {self.processor.tokenizer.eos_token_id}")
+        print(f"🔍 EOS token: '{self.processor.tokenizer.eos_token}'")
+        
+        # Get stop token IDs for Gemma (including <end_of_turn>)
+        self.stop_token_ids = []
+        if self.processor.tokenizer.eos_token_id:
+            self.stop_token_ids.append(self.processor.tokenizer.eos_token_id)
+        
+        # Try to find <end_of_turn> token ID
+        end_of_turn_token = "<end_of_turn>"
+        try:
+            end_of_turn_id = self.processor.tokenizer.convert_tokens_to_ids(end_of_turn_token)
+            if end_of_turn_id != self.processor.tokenizer.unk_token_id:
+                self.stop_token_ids.append(end_of_turn_id)
+                print(f"🔍 Found <end_of_turn> token ID: {end_of_turn_id}")
+        except:
+            pass
+        
+        print(f"🔍 Stop token IDs: {self.stop_token_ids}")
         
         print("✅ Model loaded successfully!")
     
@@ -200,15 +235,17 @@ class GemmaStreamingChat:
                 return_tensors="pt"
             ).to(self.model.device)
             
-            # Create streamer for real-time output
+            # Create streamer for real-time output with shorter timeout
             streamer = TextIteratorStreamer(
                 self.processor.tokenizer,
-                timeout=40.0,
+                timeout=2.0,  # Reduced from 40s to break out faster if generation stalls
                 skip_prompt=True,
-                skip_special_tokens=True
+                skip_special_tokens=True  # Skip special tokens for clean output
             )
             
-            # Generation parameters
+            # Generation parameters with proper stop tokens for Gemma
+            stop_criteria = StoppingCriteriaList([StopOnTokens(self.stop_token_ids)])
+            
             generation_kwargs = {
                 **inputs,
                 "max_new_tokens": max_new_tokens,
@@ -216,17 +253,19 @@ class GemmaStreamingChat:
                 "temperature": temperature,
                 "top_p": top_p,
                 "top_k": top_k,
-                "repetition_penalty": 1.05,
-                "pad_token_id": self.processor.tokenizer.eos_token_id,
+                # Removed repetition_penalty to avoid O(n²) logit recalculation
+                "pad_token_id": self.processor.tokenizer.pad_token_id,
                 "eos_token_id": self.processor.tokenizer.eos_token_id,
                 "streamer": streamer,
+                "stopping_criteria": stop_criteria,
             }
             
             print("Assistant: ", end="", flush=True)
             
-            # Start generation in background thread
+            # Start generation in background thread (daemon=True means it won't block)
             generation_thread = threading.Thread(
-                target=lambda: self.model.generate(**generation_kwargs)
+                target=lambda: self.model.generate(**generation_kwargs),
+                daemon=True
             )
             generation_thread.start()
             
@@ -237,9 +276,8 @@ class GemmaStreamingChat:
                     print(new_text, end="", flush=True)
                     generated_text += new_text
             
-            generation_thread.join()
-            # A delay happened before this
-            print("end of response")  # New line after response 
+            # Don't wait for thread - all tokens already received via streamer
+            print()  # New line after response 
             
             # Update conversation history
             self._update_conversation_history(user_input, generated_text.strip())
@@ -253,6 +291,118 @@ class GemmaStreamingChat:
             error_msg = f"Error generating response: {e}"
             print(f"\n{error_msg}")
             return error_msg
+    
+    def generate_response_stream(
+        self, 
+        user_input: str, 
+        max_new_tokens: int = 1000,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+        top_k: int = 40
+    ):
+        """
+        Generate a streaming response that yields tokens as they're generated.
+        
+        Args:
+            user_input: User's message
+            max_new_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            top_p: Top-p sampling parameter
+            top_k: Top-k sampling parameter
+            
+        Yields:
+            Individual tokens as they're generated
+        """
+        # Build conversation context
+        messages = self._build_conversation_context(user_input)
+        
+        try:
+            # Prepare inputs
+            inputs = self.processor.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt"
+            ).to(self.model.device)
+            
+            # Create streamer for real-time output with shorter timeout
+            streamer = TextIteratorStreamer(
+                self.processor.tokenizer,
+                timeout=2.0,  # Reduced from 40s to break out faster if generation stalls
+                skip_prompt=True,
+                skip_special_tokens=True  # Skip special tokens for clean output
+            )
+            
+            # Generation parameters with proper stop tokens for Gemma
+            stop_criteria = StoppingCriteriaList([StopOnTokens(self.stop_token_ids)])
+            
+            generation_kwargs = {
+                **inputs,
+                "max_new_tokens": max_new_tokens,
+                "do_sample": True,
+                "temperature": temperature,
+                "top_p": top_p,
+                "top_k": top_k,
+                # Removed repetition_penalty to avoid O(n²) logit recalculation
+                "pad_token_id": self.processor.tokenizer.pad_token_id,
+                "eos_token_id": self.processor.tokenizer.eos_token_id,
+                "streamer": streamer,
+                "stopping_criteria": stop_criteria,
+            }
+            
+            # Start generation in background thread
+            generation_thread = threading.Thread(
+                target=lambda: self.model.generate(**generation_kwargs),
+                daemon=True
+            )
+            generation_thread.start()
+            
+            # Yield tokens as they're generated with timing instrumentation
+            generated_text = ""
+            import time
+            start_time = time.time()
+            last_token_time = start_time
+            token_count = 0
+            
+            # Gemma uses <end_of_turn> as stop token
+            stop_strings = ["<end_of_turn>", "<eos>", "</s>", self.processor.tokenizer.eos_token]
+            
+            for new_text in streamer:
+                if new_text is not None:
+                    current_time = time.time()
+                    time_since_last = current_time - last_token_time
+                    
+                    # Log if there's a significant delay between tokens (>1 second)
+                    if time_since_last > 1.0:
+                        print(f"\n[TIMING] Long delay: {time_since_last:.2f}s between tokens", flush=True)
+                    
+                    # Check if this contains any stop token
+                    contains_stop = any(stop_str in new_text for stop_str in stop_strings if stop_str)
+                    if contains_stop:
+                        print(f"\n[DEBUG] Stop token detected in: '{new_text[:50]}...' Stopping generation.", flush=True)
+                        # Don't yield the stop token
+                        break
+                    
+                    generated_text += new_text
+                    yield new_text
+                    token_count += 1
+                    last_token_time = current_time
+            
+            # Log final statistics
+            total_time = time.time() - start_time
+            if token_count > 0:
+                avg_time_per_token = total_time / token_count
+                print(f"\n[TIMING] Generation complete: {token_count} tokens in {total_time:.2f}s ({avg_time_per_token:.3f}s/token)", flush=True)
+            
+            # Update conversation history after streaming completes
+            self._update_conversation_history(user_input, generated_text.strip())
+            
+            # Update statistics
+            self.total_tokens_generated += len(self.processor.tokenizer.encode(generated_text))
+            
+        except Exception as e:
+            yield f"Error: {e}"
     
     def _update_conversation_history(self, user_input: str, assistant_response: str) -> None:
         """Update the conversation history with new exchange."""
