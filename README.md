@@ -1,293 +1,269 @@
-# Context Auto Feed Agent - CAFA
+# Gemma LLM Playground
 
-## 🎯 Project Overview
+A high-performance LLM playground featuring Google's Gemma models with optimized quantization, persistent model server architecture, and a modern ChatGPT-like floating UI.
 
-A high-performance LLM playground featuring Google's Gemma models with optimized quantization and a **persistent model server architecture** for rapid development iteration.
+---
 
-### Core Features:
-- **Gemma Model Integration**: Optimized implementations for Gemma-3-12B and Gemma-3-27B models
-- **Advanced Quantization**: 4-bit and 8-bit quantization for memory efficiency
-- **Real-time Streaming**: Token-by-token streaming chat interfaces
-- **Hardware Optimization**: RTX 5090 optimized with bfloat16 support
-- **Server/Client Architecture**: Load model once, test code changes instantly ⭐ **NEW**
+## ✨ Features
 
-## 🚀 Features
+- 🤖 **Gemma-3-27B & Gemma-3-12B**: Optimized 4-bit and 8-bit quantized models
+- ⚡ **Server/Client Architecture**: Load model once, iterate instantly
+- 🪟 **Floating UI**: Modern ChatGPT-like interface with markdown rendering
+- 📊 **Real-time Streaming**: Token-by-token response generation
+- 🎯 **GPU Optimized**: RTX 5090 with bfloat16 support
+- 🔌 **HTTP API**: RESTful API for integration with other tools
 
-### ✅ Implemented
-- **Gemma-3-12B with 8-bit quantization** (~6-8GB VRAM)
-- **Gemma-3-27B with 4-bit quantization** (~7-10GB VRAM) ⭐ **Primary**
-- **Real-time streaming chat** with token-by-token output
-- **Conversation history management** with context limits
-- **GPU optimization** for RTX 5090 with bfloat16 support
-- **Automatic caching** to G drive (`/mnt/g/huggingface`)
-- **Persistent model server** for rapid development (Flask API) ⭐ **NEW**
-- **Fast client interface** with <1 second restart time ⭐ **NEW**
-- **Markdown rendering support** (in development)
+---
 
-### 🎯 Primary Configuration
-- **Model**: Gemma-3-27B-IT with 4-bit quantization
-- **Memory usage**: ~7-10GB VRAM (vs ~54GB full precision)
-- **Quality**: Highest available with efficient memory usage
-- **Speed**: Fast inference with streaming output
+## 🚀 Quick Start
 
-## 🛠️ Technology Stack
+### 1. Installation
 
-- **LLM Model**: Google Gemma-3-27B-IT (primary), Gemma-3-12B-IT (alternative)
-- **Quantization**: BitsAndBytes (4-bit/8-bit)
-- **Inference**: HuggingFace Transformers with streaming
-- **Hardware**: NVIDIA RTX 5090 (34.2GB VRAM)
-- **Precision**: bfloat16 compute optimized
-- **Cache**: G drive (`/mnt/g/huggingface`) for model storage
-- **Server**: Flask HTTP API for persistent model hosting
-- **Python**: 3.12.3 (WSL)
-- **CUDA**: 12.1
-
-## 📋 Prerequisites
-
-- Python 3.9+
-- CUDA-compatible GPU (recommended for local inference)
-- Sufficient RAM (32GB+ recommended for Gemma-27B)
-- Git
-
-## 🔧 Installation
-
-1. Clone the repository:
 ```bash
+# Clone repository
 git clone <repository-url>
 cd Person
-```
 
-2. Create a virtual environment:
-```bash
+# Create virtual environment
 python3.12 -m venv venv
-source venv/bin/activate.fish  # Fish shell
-# or source venv/bin/activate   # Bash shell
-```
+source venv/bin/activate.fish  # or: source venv/bin/activate
 
-3. Install dependencies:
-```bash
+# Install system dependencies (required for floating UI on WSL/Linux)
+sudo apt-get update
+sudo apt-get install -y python3-tk
+
+# Install Python dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-4. Environment is auto-configured in `venv/bin/activate.fish`:
-```fish
-set -gx HF_HOME /mnt/g/huggingface
-set -gx TRANSFORMERS_CACHE /mnt/g/huggingface
-set -gx HF_DATASETS_CACHE /mnt/g/huggingface
-```
-
-## 🏗️ Project Structure
-
-```
-llm-playground/
-├── src/
-│   ├── models/          # Model integration and management
-│   ├── memory/          # Long-term memory systems
-│   ├── rag/             # RAG implementation
-│   ├── processing/      # Document processing
-│   ├── api/             # API endpoints
-│   └── ui/              # User interface
-├── data/
-│   ├── documents/       # Input documents
-│   ├── embeddings/      # Vector embeddings
-│   └── memory/          # Memory storage
-├── config/              # Configuration files
-├── tests/               # Unit and integration tests
-├── notebooks/           # Jupyter notebooks for experimentation
-└── docs/                # Documentation
-```
-
-## 🚀 Quick Start
-
-### Method 1: Traditional (Simple, slower iteration)
+### 2. Start the Model Server
 
 ```bash
 source venv/bin/activate.fish
-python src/streaming_chat_27B_Q4.py  # Takes 2-6 min to load
+python src/model_server.py
 ```
+*First load takes 2-6 minutes. Server keeps model in GPU memory.*
 
-### Method 2: Server/Client (Recommended for development) ⭐
+### 3. Choose Your Interface
 
-**Terminal 1 - Start Server (once):**
+**Option A: Floating UI (Recommended)** 🪟
 ```bash
-source venv/bin/activate.fish
-python src/model_server.py  # Takes 2-6 min initially, then stays loaded
+python src/floating_ui.py
 ```
+Modern ChatGPT-like window with markdown rendering.
 
-**Terminal 2 - Use Client (instant restarts):**
+**Option B: Command-Line Client**
 ```bash
-source venv/bin/activate.fish
-python src/model_client.py  # <1 second startup!
+python src/model_client.py
 ```
+Terminal-based interactive chat.
 
-Now you can:
-- Modify `model_client.py` and restart instantly
-- Test different parameters without reloading
-- Send API requests from custom scripts
-
-**See `SERVER_SETUP.md` for complete documentation.**
-
-## 🧪 Usage Examples
-
-### Direct Model Usage
-```python
-from src.main import GemmaStreamingChat
-
-# Initialize model (takes 2-6 min)
-chat = GemmaStreamingChat()
-
-# Generate response with streaming
-response = chat.generate_response(
-    "Explain quantum computing",
-    max_new_tokens=500,
-    temperature=0.7
-)
+**Option C: Standalone (No Server)**
+```bash
+python src/streaming_chat_27B_Q4.py
 ```
+Simple standalone script (slower iteration).
 
-### Server/Client API Usage
+---
+
+## 🪟 Floating UI Features
+
+The floating UI (`src/floating_ui.py`) provides a modern chat experience:
+
+- **Markdown Rendering**: Bold, italic, code blocks, headings, lists, quotes
+- **Pin Button** 📌: Keep window always on top
+- **Clear History** 🧹: Start fresh conversation
+- **Statistics** 📊: View token counts and session info
+- **Keyboard Shortcuts**:
+  - `Enter`: Send message
+  - `Shift+Enter`: New line in input
+
+<div align="center">
+  <em>Modern, responsive UI with real-time markdown rendering</em>
+</div>
+
+---
+
+## 📖 Usage Examples
+
+### Python API
+
 ```python
 from src.model_client import GemmaClient
 
-# Connect to running server (instant)
+# Connect to running server
 client = GemmaClient()
 
 # Generate response
-response = client.generate("What is quantum computing?")
+response = client.generate("Explain quantum computing")
 print(response)
 
-# Clear history
+# Clear conversation history
 client.clear_history()
 
 # Get statistics
 stats = client.get_stats()
-```
-
-### Quick Testing Script
-```python
-# quick_test.py
-from src.model_client import GemmaClient
-
-client = GemmaClient()
-
-# Test multiple prompts rapidly
-prompts = ["Question 1", "Question 2", "Question 3"]
-for prompt in prompts:
-    response = client.generate(prompt, max_new_tokens=200)
-    print(f"Q: {prompt}\nA: {response}\n")
+print(f"Total tokens: {stats['total_tokens_generated']}")
 ```
 
 ### HTTP API (cURL)
+
 ```bash
 # Generate response
 curl -X POST http://localhost:5000/generate \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Hello!", "max_new_tokens": 100}'
+  -d '{"prompt": "Hello!", "max_new_tokens": 500}'
 
 # Check server health
 curl http://localhost:5000/health
+
+# Clear conversation history
+curl -X POST http://localhost:5000/clear_history
 
 # Get statistics
 curl http://localhost:5000/stats
 ```
 
-## ⚡ Development Benefits
+### Quick Test Script
 
-### Server/Client Architecture Advantages:
+```python
+from src.model_client import GemmaClient
 
-**Before (Traditional):**
-- Each code change = 2-6 minute model reload
-- 3 tests = 6-18 minutes total 😫
-- GPU memory cleared on every run
-- Slow iteration cycle
+client = GemmaClient()
 
-**After (Server/Client):**
-- Model loads once (2-6 min) ⚡
-- Code changes = <1 second restart
-- 3 tests = 2-6 minutes total (first load only) 🚀
-- GPU memory stays loaded
-- Rapid iteration cycle
+# Test multiple prompts
+prompts = [
+    "What is machine learning?",
+    "Explain neural networks",
+    "What is a transformer?"
+]
 
-**Example workflow:**
-```bash
-# Day 1, 9:00 AM - Start server
-python src/model_server.py  # 3 min load
-
-# 9:03 AM - Test prompt 1
-python src/model_client.py  # <1 sec
-
-# 9:05 AM - Modify code, test prompt 2  
-python src/model_client.py  # <1 sec
-
-# 9:07 AM - Modify code, test prompt 3
-python src/model_client.py  # <1 sec
-
-# Total time: ~3 minutes vs ~9 minutes traditional!
+for prompt in prompts:
+    response = client.generate(prompt, max_new_tokens=200)
+    print(f"Q: {prompt}\nA: {response}\n")
 ```
 
-## 🔬 Experiments
+---
 
-This playground supports various experimental setups:
+## 🛠️ Technology Stack
 
-1. **Rapid Prompt Engineering**: Test variations instantly with server/client
-2. **Parameter Tuning**: Compare temperature/top_p/top_k combinations quickly
-3. **Model Comparison**: Easy A/B testing between configurations
-4. **Integration Testing**: HTTP API for external tool integration
+- **Models**: Google Gemma-3-27B-IT (primary), Gemma-3-12B-IT (alternative)
+- **Quantization**: BitsAndBytes (4-bit/8-bit)
+- **Framework**: HuggingFace Transformers
+- **Server**: Flask REST API
+- **UI**: Tkinter with custom markdown renderer
+- **GPU**: CUDA 12.1 with bfloat16 optimization
+- **Python**: 3.12.3
 
-## 📊 Monitoring & Evaluation
+---
 
-- Memory usage tracking (via GPU memory display in model info)
-- Response quality metrics
-- Conversation statistics (turns, tokens, sessions)
-- Performance benchmarking
-- Server health checks (`/health` endpoint)
-- Real-time token streaming for immediate feedback
+## ⚡ Why Server/Client Architecture?
 
-## 📁 Key Files
+**Traditional Approach:**
+- Each code change requires 2-6 minute model reload
+- Testing 3 prompts = 6-18 minutes
+- GPU memory cleared on every restart
 
-### Core Implementation
-- `src/main.py` - OOP streaming chat with optimizations
-- `src/streaming_chat_27B_Q4.py` - Standalone 27B Q4 interface
-- `src/streaming_chat.py` - Standalone 12B 8-bit interface
+**Our Approach:**
+- Model loads once (2-6 min initial)
+- Code changes restart in <1 second
+- Testing 3 prompts = 2-6 minutes (first load only)
+- GPU memory stays loaded
 
-### Server/Client Architecture ⭐
-- `src/model_server.py` - Persistent Flask API server
-- `src/model_client.py` - Fast client with instant restart
-- `SERVER_SETUP.md` - Complete server/client documentation
+**Result:** 3x-10x faster development iteration! 🚀
 
-### Configuration
-- `requirements.txt` - All dependencies with versions
-- `venv/bin/activate.fish` - Environment setup with HF cache paths
-- `MEMORY.md` - Project knowledge base and troubleshooting
+---
 
-## 🤝 Contributing
+## 📁 Project Structure
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+```
+Person/
+├── src/
+│   ├── main.py                   # Core implementation (OOP)
+│   ├── model_server.py           # Flask API server
+│   ├── model_client.py           # CLI client
+│   ├── floating_ui.py            # GUI with markdown rendering ⭐
+│   ├── streaming_chat_27B_Q4.py  # Standalone 27B interface
+│   └── streaming_chat.py         # Standalone 12B interface
+├── requirements.txt              # Dependencies
+├── README.md                     # This file
+└── MEMORY.md                     # Internal knowledge base
+```
 
-## 📝 License
+---
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 🎯 Model Specifications
 
-## 🔗 References
+### Primary: Gemma-3-27B Q4
+- **Memory**: ~16GB VRAM
+- **Loading**: 2-6 minutes
+- **Quality**: Highest
+- **Output**: Up to 1000 tokens
 
-- [Google Gemma Models](https://ai.google.dev/gemma)
-- [Retrieval-Augmented Generation](https://arxiv.org/abs/2005.11401)
-- [Long-term Memory in AI Systems](https://arxiv.org/abs/2301.04589)
+### Alternative: Gemma-3-12B 8-bit
+- **Memory**: ~6-8GB VRAM
+- **Loading**: ~2 minutes  
+- **Quality**: High
+- **Output**: Up to 200 tokens
+
+---
+
+## 🔧 Configuration
+
+Models are automatically cached to G drive to save space:
+```fish
+# In venv/bin/activate.fish
+set -gx HF_HOME /mnt/g/huggingface
+set -gx TRANSFORMERS_CACHE /mnt/g/huggingface
+set -gx HF_DATASETS_CACHE /mnt/g/huggingface
+```
+
+---
+
+## 🤝 API Reference
+
+### Server Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Server health check |
+| `/generate` | POST | Generate response |
+| `/clear_history` | POST | Clear conversation |
+| `/stats` | GET | Get statistics |
+| `/update_system_prompt` | POST | Change system prompt |
+| `/shutdown` | POST | Shutdown server |
+
+### Generate Request Format
+
+```json
+{
+  "prompt": "Your question here",
+  "max_new_tokens": 1000,
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "top_k": 40
+}
+```
+
+### Response Format
+
+```json
+{
+  "response": "Generated text...",
+  "prompt": "Your question here",
+  "timestamp": 1234567890.123
+}
+```
+
+---
 
 ## 🐛 Troubleshooting
 
-### Common Issues
-
 **Server won't start:**
 ```bash
-# Check if port is in use
+# Check if port 5000 is already in use
 lsof -i :5000
-
-# Kill existing process
 kill -9 <PID>
 ```
 
@@ -297,33 +273,110 @@ kill -9 <PID>
 curl http://localhost:5000/health
 ```
 
-**Python venv broken:**
+**UI window won't open:**
 ```bash
-# Recreate with WSL Python
-rm -rf venv
-python3.12 -m venv venv
-source venv/bin/activate.fish
-pip install -r requirements.txt
+# On WSL/Linux, install tkinter first
+sudo apt-get install -y python3-tk
+
+# Test tkinter availability
+python -c "import tkinter"
 ```
 
 **Import errors:**
-- Always run from project root: `python src/model_server.py`
-- Never run from inside src/: `cd src && python model_server.py` ❌
+```bash
+# Always run from project root, not from src/
+python src/model_server.py  ✅
+cd src && python model_server.py  ❌
+```
 
-**See `MEMORY.md` for complete troubleshooting guide.**
-
-## 📞 Support
-
-For questions and support, please open an issue or check `MEMORY.md` for common solutions.
+For detailed troubleshooting, see `MEMORY.md`.
 
 ---
 
-**Status**: ✅ Production Ready | **Last Updated**: October 2025
+## 📊 Performance
 
-### Recent Updates:
-- ✅ Server/Client architecture for rapid development
-- ✅ Fixed Python venv (WSL Python 3.12)
-- ✅ Complete requirements.txt with all dependencies
+| Metric | Value |
+|--------|-------|
+| Model load time | 2-6 minutes |
+| Token generation | 15-25 tokens/sec |
+| Client startup | <1 second |
+| Memory footprint | ~16GB VRAM |
+
+---
+
+## 🧪 Development
+
+### Running Tests
+
+```python
+# Quick test multiple prompts
+python src/model_client.py
+# Then use quick_test() function
+```
+
+### Modifying the UI
+
+```bash
+# Edit floating_ui.py, then restart (instant)
+python src/floating_ui.py
+```
+
+### Adding New Features
+
+1. Start server: `python src/model_server.py`
+2. Edit client code: `src/model_client.py` or `src/floating_ui.py`
+3. Restart client: `<1 second` (model stays loaded!)
+
+---
+
+## 📝 Requirements
+
+**Hardware:**
+- NVIDIA GPU with CUDA support (16GB+ VRAM recommended)
+- 32GB+ RAM
+- ~50GB disk space for models
+
+**Software:**
+- Python 3.9+
+- CUDA 11.8+ (12.1 recommended)
+- Linux (WSL2 on Windows supported)
+
+See `requirements.txt` for Python package dependencies.
+
+---
+
+## 🌟 Recent Updates
+
+- ✅ **October 2025**: Added floating UI with markdown rendering
+- ✅ Implemented always-on-top pin feature
+- ✅ Server/client architecture for rapid development
 - ✅ Fixed deprecation warnings (dtype vs torch_dtype)
-- 🚧 UI interface with markdown rendering (in progress)
-- 📋 LaTeX rendering support (planned)
+- ✅ Complete requirements.txt with all dependencies
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 🔗 Resources
+
+- [Google Gemma Documentation](https://ai.google.dev/gemma)
+- [BitsAndBytes Quantization](https://github.com/TimDettmers/bitsandbytes)
+- [HuggingFace Transformers](https://huggingface.co/docs/transformers)
+
+---
+
+## 📞 Support
+
+- Check `MEMORY.md` for detailed troubleshooting
+- Open an issue for bugs or feature requests
+- Review server logs for debugging
+
+---
+
+<div align="center">
+  <strong>Built with ❤️ for rapid LLM experimentation</strong>
+</div>

@@ -1,52 +1,49 @@
-# MEMORY.md - Essential Project Information
+# MEMORY.md - Internal Project Knowledge Base
 
 **Last Updated**: October 2025  
 **Primary Model**: Gemma-3-27B-IT with 4-bit quantization  
 **Development Mode**: Server/Client architecture for rapid iteration
 
-## 🎯 Project Summary
+## 🎯 Purpose
 
-This is an LLM playground focused on Google's Gemma models with optimized quantization for efficient inference on RTX 5090 GPU. Features a persistent model server architecture that loads the model once and keeps it in GPU memory, enabling instant code testing without 2-6 minute reload times.
+This file contains internal working knowledge, troubleshooting details, and development-specific information for maintaining and debugging this project. For user-facing documentation, see README.md.
 
-## 🖥️ Hardware Setup
+---
 
+## 🖥️ Hardware & Environment
+
+### Hardware Setup
 - **GPU**: NVIDIA RTX 5090 (34.2GB VRAM)
 - **Compute Capability**: 12.0 (supports bfloat16)
-- **OS**: Windows with WSL
+- **OS**: Windows 11 with WSL2
 - **Shell**: Fish shell
+- **Python**: 3.12.3 (WSL Python, NOT Microsoft Store Python)
 
-## 📂 Environment Configuration
+### Environment Configuration
 
-### Virtual Environment
-- **Location**: `venv/` in project root
-- **Activation**: `source venv/bin/activate.fish`
-- **Python**: 3.12.3
+**Virtual Environment:**
+- Location: `venv/` in project root
+- Activation: `source venv/bin/activate.fish`
+- **Critical**: Use WSL Python (`python3.12 -m venv venv`), not Microsoft Store Python
 
-### Cache Configuration (Fish shell)
+**Cache Configuration (in `venv/bin/activate.fish`):**
 ```fish
 set -gx TRANSFORMERS_CACHE /mnt/g/huggingface
 set -gx HF_HOME /mnt/g/huggingface
 set -gx HF_DATASETS_CACHE /mnt/g/huggingface
 ```
-*Models are cached to G drive to save space*
+*Models cached to G drive to save SSD space. Ensure G drive is mounted at `/mnt/g/`*
 
-## 🤖 Available Models
+**Project Path:**
+```bash
+cd "/mnt/p/Work/Personal/Person"
+```
 
-### Primary: Gemma-3-27B Q4 ⭐
-- **File**: `src/streaming_chat_27B_Q4.py`
-- **Memory**: ~7-10GB VRAM (16.3GB in practice)
-- **Quality**: Highest
-- **Features**: 1000 token responses, enhanced system prompt
+---
 
-### Alternative: Gemma-3-12B 8-bit
-- **File**: `src/streaming_chat.py`  
-- **Memory**: ~6-8GB VRAM
-- **Quality**: High
-- **Features**: 200 token responses, faster loading
+## 🔧 Model Technical Details
 
-## 🔧 Model Configurations
-
-### 27B 4-bit Configuration
+### Gemma-3-27B Q4 Configuration (Primary)
 ```python
 quantization_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -55,168 +52,285 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_use_double_quant=True
 )
 ```
+- **Actual VRAM usage**: ~16.3GB (not 7-10GB as docs claim)
+- **Loading time**: 2-6 minutes (varies by system load)
+- **Token speed**: ~15-25 tokens/sec
+- **Max tokens**: 1000 tokens configured
+- **Proven stable**: Use as primary configuration
 
-### 12B 8-bit Configuration  
+### Gemma-3-12B 8-bit Configuration (Alternative)
 ```python
 quantization_config = BitsAndBytesConfig(
     load_in_8bit=True,
     bnb_8bit_compute_dtype=torch.bfloat16
 )
 ```
+- **VRAM usage**: ~6-8GB
+- **Loading time**: ~2 minutes
+- **Max tokens**: 200 tokens configured
+- **Use case**: Quick testing when 27B is too heavy
 
-## 📦 Key Dependencies
-
-```
-torch>=2.8.0 (CUDA 12.1)
-transformers>=4.56.0
-accelerate>=1.10.0
-bitsandbytes>=0.47.0
-sentencepiece>=0.2.1
-flask>=3.0.0 (for model server)
-```
-
-**Installation:**
-```bash
-pip install -r requirements.txt
-```
-
-## 🚀 Quick Start Commands
-
-### Option 1: Direct Chat (Traditional)
-```bash
-# Navigate to project
-cd "/mnt/p/Work/Personal/Person"
-
-# Activate environment
-source venv/bin/activate.fish
-
-# Run primary model (27B Q4) - Takes 2-6 min to load
-python src/streaming_chat_27B_Q4.py
-
-# Run OOP version with optimizations
-python src/main.py
-```
-
-### Option 2: Server/Client Mode (Recommended for Development) ⭐
-```bash
-# Terminal 1: Start model server (load once, keeps running)
-source venv/bin/activate.fish
-python src/model_server.py  # Takes 2-6 min initially
-
-# Terminal 2: Use fast client (restarts instantly)
-source venv/bin/activate.fish
-python src/model_client.py  # <1 second startup
-
-# Modify model_client.py and restart instantly!
-```
-
-**See `SERVER_SETUP.md` for complete server/client documentation.**
-
-## 🎮 Chat Commands
-
-- Type normally to chat
-- `quit` / `exit` / `bye` - Exit chat
-- `clear` - Clear conversation history
-- `Ctrl+C` - Force quit
-
-## 🐛 Common Issues & Solutions
-
-### Memory Errors
-- **8-bit quantization fails**: 27B 8-bit requires `llm_int8_enable_fp32_cpu_offload=True`
-- **4-bit works reliably**: Use 27B Q4 as primary (proven stable)
-
-### Performance
-- **Loading time**: 2-6 minutes for 27B model (normal)
-- **Token speed**: ~15-25 tokens/sec expected
-- **Memory usage**: Monitor with GPU memory display
-- **Post-generation delay**: 30-50 seconds after streaming completes (due to thread cleanup)
-
-### Environment Issues
-- **bfloat16 errors**: RTX 5090 supports it, use `dtype=torch.bfloat16` (not `torch_dtype`)
-- **Cache location**: Ensure G drive is mounted at `/mnt/g/`
-- **Python venv broken**: Recreate with WSL Python (`python3.12 -m venv venv`)
-- **Module import errors**: Run from project root, not inside src/
-
-### Server/Client Issues
-- **Server won't start**: Check if port 5000 is in use (`lsof -i :5000`)
-- **Client can't connect**: Ensure server is running first
-- **Model stays loaded**: Server keeps model in GPU until shutdown
-
-## 📊 Performance Benchmarks
-
-| Model | Memory | Loading Time | Quality | Use Case |
-|-------|--------|--------------|---------|----------|
-| 27B Q4 | ~16GB | ~6 min | Highest | Primary choice |
-| 12B 8-bit | ~6GB | ~2 min | High | Quick testing |
-
-## 🗂️ File Structure
-
-```
-src/
-├── streaming_chat_27B_Q4.py  # Primary 27B Q4 interface (standalone)
-├── streaming_chat.py         # 12B 8-bit interface  
-├── main.py                   # OOP version with optimizations ⭐
-├── model_server.py           # Persistent model server (Flask API) ⭐
-├── model_client.py           # Fast client for server (instant restart) ⭐
-├── chat.py                   # Non-streaming version
-└── debug_gemma.py            # Debugging tool (deleted)
-
-Root files:
-├── requirements.txt          # All dependencies with versions
-├── SERVER_SETUP.md           # Server/client documentation
-├── MEMORY.md                 # This file - project knowledge
-├── README.md                 # Project overview
-└── packages_backup.txt       # Backup of installed packages
-```
-
-## 🔄 Git Status
-
-- **Current branch**: master
-- **Last commit**: Added Gemma implementations with quantization
-- **Files tracked**: All essential chat interfaces and configs
-
-## 🎯 User Preferences
-
-- **Primary model**: Gemma-3-27B with 4-bit quantization
-- **Focus**: Quality over speed (27B preferred over 12B)
-- **Output**: Long-form responses (1000 tokens for 27B)
-- **No comparison files**: Stick to requested implementations only
-
-## 💡 Development Workflow
-
-### For Production Use:
-```bash
-python src/streaming_chat_27B_Q4.py  # Standalone, simple
-python src/main.py                    # OOP version
-```
-
-### For Development/Testing (Recommended):
-```bash
-# Terminal 1 (leave running):
-python src/model_server.py
-
-# Terminal 2 (modify & restart rapidly):
-python src/model_client.py
-```
-
-## 📋 Todo List
-
-- [x] Fix Python venv (WSL Python 3.12)
-- [x] Create requirements.txt
-- [x] Fix torch_dtype deprecation warnings
-- [x] Implement model server/client architecture
-- [x] Document server setup
-- [ ] Add LaTeX rendering support to UI
-- [ ] Implement Flash Attention 2 optimization
-- [ ] Create floating window UI with markdown rendering
-
-## 🎯 Recent Improvements
-
-- **Server/Client Architecture**: Load model once, test code instantly
-- **Fixed venv**: Now uses WSL Python 3.12 (was broken by Microsoft Store Python)
-- **Optimized imports**: Fixed deprecation warnings (dtype vs torch_dtype)
-- **Better documentation**: Added SERVER_SETUP.md and requirements.txt
+### Critical Configuration Notes
+- **Always use**: `dtype=torch.bfloat16` (NOT `torch_dtype` - deprecated)
+- **8-bit 27B fails** without `llm_int8_enable_fp32_cpu_offload=True`
+- **4-bit is more reliable** for 27B than 8-bit
+- **RTX 5090 supports bfloat16** natively (Compute Capability 12.0)
 
 ---
 
-**Note**: This file should be updated whenever significant changes are made to the project configuration or when new optimizations are discovered.
+## 🐛 Troubleshooting Guide
+
+### Memory & Performance Issues
+
+**8-bit quantization fails on 27B:**
+```python
+# Requires CPU offload (not recommended)
+llm_int8_enable_fp32_cpu_offload=True
+```
+**Solution**: Use 4-bit instead - more reliable and faster.
+
+**Post-generation delay (30-50 seconds):**
+- **Cause**: PyTorch thread cleanup after streaming
+- **Normal behavior**: Not a bug
+- **Workaround**: None needed, inherent to transformers library
+
+**Loading time varies (2-6 minutes):**
+- **Cause**: Disk I/O to G drive, system load
+- **Normal**: First load is slower, subsequent loads may be cached
+- **Tip**: Use server/client mode to avoid reloading
+
+**Token speed slow (<10 tokens/sec):**
+- Check GPU utilization with `nvidia-smi`
+- Ensure no other processes using GPU
+- Verify bfloat16 is being used (not float32)
+
+### Environment Issues
+
+**bfloat16 errors despite GPU support:**
+```python
+# Wrong (deprecated):
+torch_dtype=torch.bfloat16
+
+# Correct:
+dtype=torch.bfloat16
+```
+
+**Cache location errors:**
+```bash
+# Verify G drive is mounted
+ls /mnt/g/huggingface
+# If not mounted, check Windows disk management
+```
+
+**Python venv broken (import errors, missing packages):**
+```bash
+# Nuclear option - recreate venv with WSL Python
+rm -rf venv
+python3.12 -m venv venv
+source venv/bin/activate.fish
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**Module import errors:**
+- **Cause**: Running from inside `src/` directory
+- **Solution**: Always run from project root
+```bash
+# Correct:
+python src/model_server.py
+
+# Wrong:
+cd src && python model_server.py
+```
+
+### Server/Client Issues
+
+**Server won't start - port already in use:**
+```bash
+# Find process using port 5000
+lsof -i :5000
+
+# Kill it
+kill -9 <PID>
+
+# Alternative: Use different port
+# Edit model_server.py: app.run(port=5001)
+```
+
+**Client can't connect:**
+```bash
+# 1. Verify server is running
+curl http://localhost:5000/health
+
+# 2. Check server terminal for errors
+
+# 3. Restart server if frozen
+```
+
+**Model stays loaded after server shutdown:**
+```bash
+# GPU memory not cleared
+python -c "import torch; torch.cuda.empty_cache()"
+
+# Or restart WSL terminal
+```
+
+**Server crashes during generation:**
+- Check GPU memory with `nvidia-smi`
+- May be OOM - try 12B model instead
+- Check server logs for Python errors
+
+### UI Issues
+
+**Floating UI won't start - ModuleNotFoundError: No module named 'tkinter':**
+```bash
+# tkinter is NOT available via pip - it's a system package
+# Install on WSL/Linux (REQUIRED):
+sudo apt-get update
+sudo apt-get install -y python3-tk
+
+# Verify installation:
+python3 -c "import tkinter; print('✅ tkinter working!')"
+```
+**Note**: tkinter cannot be installed via pip. It's a system-level package that must be installed with apt-get on WSL/Linux.
+
+**UI connects but no responses:**
+- Verify server is running: `curl http://localhost:5000/health`
+- Check server terminal for generation errors
+- Try clearing history in UI
+
+**Markdown not rendering:**
+- Expected behavior for complex markdown
+- Supports: bold, italic, code, code blocks, headings, lists, quotes
+- Doesn't support: tables, nested formatting, LaTeX
+
+---
+
+## 💡 Development Workflow & Tips
+
+### Recommended Development Pattern
+
+**Daily workflow:**
+```bash
+# Morning: Start server once
+python src/model_server.py  # 3-6 min initial load
+
+# Then use client/UI all day without reloading
+python src/model_client.py  # <1 sec startup
+python src/floating_ui.py   # <1 sec startup
+```
+
+**File modification workflow:**
+- Modify `model_client.py` → restart instantly
+- Modify `floating_ui.py` → restart instantly  
+- Modify `model_server.py` → must restart server (3-6 min reload)
+
+### User Preferences (from past conversations)
+
+- **Primary model**: Gemma-3-27B Q4 (quality over speed)
+- **Output length**: Long-form responses (1000 tokens)
+- **No comparison files**: Don't create side-by-side comparisons
+- **Stick to requested implementations**: Don't add extra features
+
+### Git Workflow
+
+- **Branch**: master
+- **Don't commit** without explicit request
+- **Never force push** to master
+- **Never skip hooks** (--no-verify)
+
+---
+
+## 📊 Performance Benchmarks
+
+| Model | VRAM (Actual) | Load Time | Quality | Tokens/sec | Use Case |
+|-------|---------------|-----------|---------|------------|----------|
+| 27B Q4 | ~16GB | 3-6 min | Highest | 15-25 | Primary |
+| 12B 8-bit | ~6-8GB | ~2 min | High | 20-30 | Quick tests |
+
+**Comparison:**
+- 27B full precision would use ~54GB (impossible on RTX 5090)
+- 4-bit quantization gives 70% memory savings with minimal quality loss
+- Server/client mode saves 6-18 minutes per development cycle
+
+---
+
+## 🗂️ File Structure Details
+
+```
+src/
+├── main.py                   # OOP version, core implementation
+├── streaming_chat_27B_Q4.py  # Standalone 27B Q4 (simple)
+├── streaming_chat.py         # Standalone 12B 8-bit (simple)
+├── model_server.py           # Flask server (persistent model)
+├── model_client.py           # CLI client (instant restart)
+└── floating_ui.py            # GUI client with markdown ⭐ NEW
+
+Root:
+├── requirements.txt          # All dependencies
+├── MEMORY.md                 # This file
+├── README.md                 # User-facing docs
+└── venv/                     # Virtual environment
+```
+
+**Implementation notes:**
+- `main.py` is the core - server/client/UI all use it
+- `streaming_chat_*.py` are standalone for simple use
+- `model_server.py` keeps model in GPU, serves HTTP API
+- `model_client.py` is CLI interface to server
+- `floating_ui.py` is GUI interface with tkinter + markdown
+
+---
+
+## 📋 Completed & Pending Tasks
+
+### ✅ Completed
+- [x] Fixed Python venv (WSL Python 3.12)
+- [x] Created requirements.txt with all versions
+- [x] Fixed torch_dtype deprecation warnings
+- [x] Implemented server/client architecture
+- [x] Created SERVER_SETUP.md documentation
+- [x] Built floating UI with markdown rendering
+- [x] Added always-on-top pin feature to UI
+
+### 🚧 Future Improvements
+- [ ] Add LaTeX rendering to UI (for math formulas)
+- [ ] Implement Flash Attention 2 optimization
+- [ ] Add streaming token display in UI (SSE)
+- [ ] Create system tray icon for UI
+- [ ] Add conversation export/import
+- [ ] Implement prompt templates
+- [ ] Add voice input/output
+
+---
+
+## 🔍 Known Issues & Quirks
+
+### Expected Behaviors (Not Bugs)
+1. **30-50 second delay after generation**: PyTorch thread cleanup - normal
+2. **High initial load time (2-6 min)**: Large model + quantization - normal
+3. **VRAM higher than expected (16GB vs 10GB)**: Quantization overhead - normal
+4. **Server keeps GPU memory**: By design - allows instant requests
+
+### Actual Bugs (None currently known)
+*Document bugs here as they're discovered*
+
+---
+
+## 📝 Version History
+
+**October 2025:**
+- ✅ Added floating UI with markdown rendering (`floating_ui.py`)
+- ✅ Implemented always-on-top pin feature
+- ✅ Server/client architecture fully functional
+- ✅ Fixed all deprecation warnings
+- ✅ Reorganized MEMORY.md vs README.md (no duplication)
+
+---
+
+**Note**: Update this file whenever:
+- New bugs are discovered and solved
+- Configuration changes are made
+- Hardware/environment changes
+- New optimization techniques are found
+- User preferences change
