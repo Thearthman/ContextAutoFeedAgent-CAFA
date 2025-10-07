@@ -59,12 +59,6 @@ quantization_config = BitsAndBytesConfig(
 - **Proven stable**: Use as primary configuration
 
 ### Gemma-3-12B 8-bit Configuration (Alternative)
-```python
-quantization_config = BitsAndBytesConfig(
-    load_in_8bit=True,
-    bnb_8bit_compute_dtype=torch.bfloat16
-)
-```
 - **VRAM usage**: ~6-8GB
 - **Loading time**: ~2 minutes
 - **Max tokens**: 200 tokens configured
@@ -323,7 +317,6 @@ Root:
 ## 🔍 Known Issues & Quirks
 
 ### Expected Behaviors (Not Bugs)
-1. **30-50 second delay after generation**: PyTorch thread cleanup - normal
 2. **High initial load time (2-6 min)**: Large model + quantization - normal
 3. **VRAM higher than expected (16GB vs 10GB)**: Quantization overhead - normal
 4. **Server keeps GPU memory**: By design - allows instant requests
@@ -337,7 +330,6 @@ Root:
 
 **October 2025:**
 - ✅ Added floating UI with markdown rendering (`floating_ui.py`)
-- ✅ Implemented always-on-top pin feature
 - ✅ Server/client architecture fully functional
 - ✅ Fixed all deprecation warnings
 - ✅ Reorganized MEMORY.md vs README.md (no duplication)

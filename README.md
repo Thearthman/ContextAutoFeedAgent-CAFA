@@ -1,8 +1,11 @@
 # Gemma LLM Playground
 
-A high-performance LLM playground featuring Google's Gemma models with optimized quantization, persistent model server architecture, and a modern ChatGPT-like floating UI.
+A high-performance LLM playground featuring Google's Gemma models with optimized quantization, persistent model server architecture, and a modern ChatGPT-like floating UI. Planning to integrate into Obsidian for a personal assistance style agent that proactively reads your note to organize and solve your problems.
 
 ---
+
+## Currently working on: Obsidian Plugin
+> Details can be found in the OBSIDIAN_PLUGIN_DEVELOPMENT.md
 
 ## ✨ Features
 
