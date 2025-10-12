@@ -4,8 +4,9 @@ A high-performance LLM playground featuring Google's Gemma models with optimized
 
 ---
 
-## Currently working on: Obsidian Plugin
+## Currently working on: Obsidian Plugin & Memory Tool
 > Details can be found in the OBSIDIAN_PLUGIN_DEVELOPMENT.md
+> Memory Tool documentation: MEMORY_TOOL_README.md
 
 ## ✨ Features
 
@@ -15,6 +16,7 @@ A high-performance LLM playground featuring Google's Gemma models with optimized
 - 📊 **Real-time Streaming**: Token-by-token response generation
 - 🎯 **GPU Optimized**: RTX 5090 with bfloat16 support
 - 🔌 **HTTP API**: RESTful API for integration with other tools
+- 🧠 **Memory Tool**: Semantic memory storage with time decay and vector search
 
 ---
 
@@ -181,17 +183,27 @@ for prompt in prompts:
 ## 📁 Project Structure
 
 ```
-Person/
+ContextAutoFeedAgent-CAFA/
 ├── src/
 │   ├── main.py                   # Core implementation (OOP)
 │   ├── model_server.py           # Flask API server
-│   ├── model_client.py           # CLI client
 │   ├── floating_ui.py            # GUI with markdown rendering ⭐
-│   ├── streaming_chat_27B_Q4.py  # Standalone 27B interface
-│   └── streaming_chat.py         # Standalone 12B interface
+│   └── memory_tool/              # Memory system 🧠
+│       ├── embeddings.py         # Text vectorization
+│       ├── memory_store.py       # Storage and retrieval
+│       ├── decay.py              # Time decay logic
+│       └── api/                  # API interfaces
+│           ├── memory_manager.py # Memory coordinator
+│           └── memory_api.py     # FastAPI endpoints
+├── tests/
+│   └── test_memory.py            # Memory tests
+├── run_memory_api.py             # API server launcher
+├── test_memory_basic.py          # Quick tests
 ├── requirements.txt              # Dependencies
 ├── README.md                     # This file
-└── MEMORY.md                     # Internal knowledge base
+├── MEMORY.md                     # Internal knowledge base
+├── MEMORY_TOOL_README.md         # Memory Tool documentation
+└── OBSIDIAN_PLUGIN_DEVELOPMENT.md # Plugin development guide
 ```
 
 ---
