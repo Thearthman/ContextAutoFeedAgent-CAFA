@@ -8,10 +8,10 @@ from .embeddings import EmbeddingGenerator
 
 class MemoryStore:
     """
-    长期记忆存储系统：
-    - 添加新记忆
-    - 搜索相似记忆
-    - 对旧记忆进行时间衰减
+    Long-term memory storage system:
+    - Add new memories
+    - Search similar memories
+    - Apply time decay to old memories
     """
 
     def __init__(self, path: str = "memory_data.json"):
@@ -31,8 +31,8 @@ class MemoryStore:
 
     def add_memory(self, text: str, importance: float = 1.0):
         """
-        添加新的记忆。
-        importance 是一个权重，表示记忆的重要性（0-1）。
+        Add a new memory.
+        importance is a weight representing the memory's importance (0-1).
         """
         embedding = self.model.embed(text).tolist()
         memory = {
@@ -47,7 +47,7 @@ class MemoryStore:
 
     def search(self, query: str, top_k: int = 3):
         """
-        根据语义相似度检索最相关的记忆。
+        Retrieve the most relevant memories based on semantic similarity.
         """
         if not self.memories:
             return []
@@ -65,8 +65,8 @@ class MemoryStore:
 
     def decay(self, half_life_days: float = 7.0):
         """
-        根据时间衰减公式降低记忆重要性。
-        越久远的记忆重要性越低。
+        Reduce memory importance based on time decay formula.
+        Older memories have lower importance.
         """
         now = datetime.now()
         for mem in self.memories:
@@ -80,13 +80,13 @@ class MemoryStore:
 
 if __name__ == "__main__":
     store = MemoryStore()
-    store.add_memory("我在考试中错了牛顿第三定律的题", importance=0.9)
-    store.add_memory("我在复习时发现自己不理解热力学第二定律", importance=0.8)
+    store.add_memory("I got Newton's third law wrong in the exam", importance=0.9)
+    store.add_memory("I found I don't understand the second law of thermodynamics during review", importance=0.8)
 
-    print("\n🔍 搜索相关记忆：")
-    print(store.search("复习热力学"))
+    print("\n🔍 Search related memories:")
+    print(store.search("thermodynamics review"))
 
-    print("\n🧮 衰减记忆：")
+    print("\n🧮 Decay memories:")
     store.decay()
     print(store.memories)
 

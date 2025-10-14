@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
 Memory API Server Launcher
-启动 Memory Tool 的 FastAPI 服务器
+Launches the Memory Tool FastAPI server
 """
 
 import sys
 import os
 
-# 添加 src 目录到 Python 路径
+# Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 if __name__ == "__main__":
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     print("🧠 Starting Memory Tool API Server...")
     print("📍 API Documentation: http://localhost:8000/docs")
     print("📖 ReDoc: http://localhost:8000/redoc")
-    print("\n按 Ctrl+C 停止服务器\n")
+    print("\nPress Ctrl+C to stop server\n")
     
     uvicorn.run(
         "memory_tool.api.memory_api:app",

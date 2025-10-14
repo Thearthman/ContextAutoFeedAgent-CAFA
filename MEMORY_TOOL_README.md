@@ -1,125 +1,126 @@
-# Memory Tool - 长期记忆系统
+# Memory Tool - Long-term Memory System
 
-## 概述
+## Overview
 
-Memory Tool 是一个基于语义向量的长期记忆存储和检索系统，支持：
-- 📝 **记忆存储**：保存文本记忆并生成语义向量
-- 🔍 **语义检索**：根据查询内容检索最相关的记忆
-- ⏰ **时间衰减**：模拟人类记忆的遗忘曲线
-- 🌐 **API 接口**：提供 FastAPI RESTful API
+Memory Tool is a semantic vector-based long-term memory storage and retrieval system that supports:
+- 📝 **Memory Storage**: Save text memories and generate semantic vectors
+- 🔍 **Semantic Retrieval**: Retrieve most relevant memories based on query content
+- ⏰ **Time Decay**: Simulate human memory forgetting curve
+- 🌐 **API Interface**: Provides FastAPI RESTful API
 
-## 项目结构
+## Project Structure
 
 ```
 src/
-└── memory_tool/           # 核心记忆模块
+└── memory_tool/           # Core memory module
     ├── __init__.py
-    ├── embeddings.py      # 文本向量化
-    ├── memory_store.py    # 记忆存储和检索
-    ├── decay.py           # 时间衰减逻辑
-    └── api/               # API 接口
+    ├── embeddings.py      # Text vectorization
+    ├── memory_store.py    # Memory storage and retrieval
+    
+    ├── decay.py           # Time decay logic
+    └── api/               # API interface
         ├── __init__.py
-        ├── memory_manager.py  # 记忆管理器
-        └── memory_api.py      # FastAPI 接口
+        ├── memory_manager.py  # Memory manager
+        └── memory_api.py      # FastAPI interface
 tests/
-└── test_memory.py         # 测试文件
-run_memory_api.py          # API 启动脚本
-test_memory_basic.py       # 快速测试脚本
+└── test_memory.py         # Test file
+run_memory_api.py          # API startup script
+test_memory_basic.py       # Quick test script
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-主要依赖：
-- `sentence-transformers`: 文本向量化
-- `chromadb`: 向量数据库（可选）
-- `fastapi`: API 框架
-- `uvicorn`: ASGI 服务器
+Main dependencies:
+- `sentence-transformers`: Text vectorization
+- `chromadb`: Vector database (optional)
+- `fastapi`: API framework
+- `uvicorn`: ASGI server
 
-### 2. 基础使用
+### 2. Basic Usage
 
 #### Python API
 
 ```python
 from src.memory_tool.memory_store import MemoryStore
 
-# 创建记忆存储
+# Create memory store
 store = MemoryStore()
 
-# 添加记忆
-store.add_memory("我在考试中错了牛顿第三定律的题", importance=0.9)
-store.add_memory("我在复习时发现自己不理解热力学第二定律", importance=0.8)
+# Add memories
+store.add_memory("I got Newton's third law wrong in the exam", importance=0.9)
+store.add_memory("I found I don't understand the second law of thermodynamics during review", importance=0.8)
 
-# 搜索相关记忆
-results = store.search("复习热力学", top_k=3)
+# Search related memories
+results = store.search("review thermodynamics", top_k=3)
 for result in results:
-    print(f"记忆: {result['text']}")
-    print(f"相似度: {result['similarity']}")
+    print(f"Memory: {result['text']}")
+    print(f"Similarity: {result['similarity']}")
 
-# 执行时间衰减
+# Execute time decay
 store.decay(half_life_days=7.0)
 ```
 
 #### REST API
 
-启动 API 服务器：
+Start API server:
 
 ```bash
-# 方式 1: 使用启动脚本（推荐）
+# Method 1: Use startup script (recommended)
 python run_memory_api.py
 
-# 方式 2: 直接使用 uvicorn
+# Method 2: Use uvicorn directly
 cd src
 uvicorn memory_tool.api.memory_api:app --reload --port 8000
 ```
 
-API 端点：
+API endpoints:
 
-**存储记忆**
+**Store memory**
 ```bash
-curl -X POST "http://localhost:8000/store?text=我今天学习了Python编程"
+curl -X POST "http://localhost:8000/store?text=I learned Python programming today"
 ```
 
-**检索记忆**
+**Retrieve memory**
 ```bash
-curl "http://localhost:8000/recall?query=Python学习"
+curl "http://localhost:8000/recall?query=Python learning"
 ```
 
-**触发衰减**
+**Trigger decay**
 ```bash
 curl -X POST "http://localhost:8000/decay"
 ```
 
-## 核心功能
+## Core Features
 
-### 1. 语义向量化 (embeddings.py)
+### 1. Semantic Vectorization (embeddings.py)
 
-使用 `sentence-transformers` 的 `all-MiniLM-L6-v2` 模型将文本转换为 384 维向量。
+Use `sentence-transformers`' `all-MiniLM-L6-v2` model to convert text to 384-dimensional vectors.
 
 ```python
 from src.memory_tool.embeddings import EmbeddingGenerator
 
 generator = EmbeddingGenerator()
 
-# 生成向量
-embedding = generator.embed("这是一段文本")
+# Generate vector
+embedding = generator.embed("This is a piece of text")
 
-# 计算相似度
-similarity = generator.similarity("文本A", "文本B")
+# Calculate similarity
+similarity = generator.similarity("Text A", "Text B")
 ```
 
-### 2. 记忆存储 (memory_store.py)
+### 2. Memory Storage (memory_store.py)
 
-- **存储格式**：JSON 文件（默认 `memory_data.json`）
-- **记忆结构**：
+- **Storage format**: JSON file (default `memory_data.json`)
+- **Memory structure**:
   ```json
   {
-    "text": "记忆内容",
+    "text": "Memory content",
     "embedding": [0.1, 0.2, ...],
     "importance": 0.9,
     "timestamp": "2025-10-12T10:30:00"

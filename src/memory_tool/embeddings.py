@@ -5,25 +5,25 @@ import numpy as np
 class EmbeddingGenerator:
     """
     A simple embedding generator using SentenceTransformer.
-    用于生成文本语义向量的类。
+    Class for generating text semantic vectors.
     """
 
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        # 加载轻量级向量模型
+        # Load lightweight vector model
         self.model = SentenceTransformer(model_name)
 
     def embed(self, text: str) -> np.ndarray:
         """
-        将文本转换为向量。
+        Convert text to vector.
         """
         if not text.strip():
-            raise ValueError("输入文本不能为空")
+            raise ValueError("Input text cannot be empty")
         embedding = self.model.encode(text)
         return np.array(embedding)
 
     def similarity(self, text1: str, text2: str) -> float:
         """
-        计算两个文本的语义相似度（余弦相似度）。
+        Calculate semantic similarity between two texts (cosine similarity).
         """
         emb1 = self.embed(text1)
         emb2 = self.embed(text2)
@@ -31,9 +31,9 @@ class EmbeddingGenerator:
         return float(sim)
 
 
-# 测试
+# Test
 if __name__ == "__main__":
     generator = EmbeddingGenerator()
-    sim = generator.similarity("你好，今天过得怎么样？", "今天天气不错，你好吗？")
-    print(f"相似度: {sim:.3f}")
+    sim = generator.similarity("Hello, how are you today?", "The weather is nice today, how are you?")
+    print(f"Similarity: {sim:.3f}")
 
