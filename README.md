@@ -1,20 +1,27 @@
-# Gemma LLM Playground
+# Qwen Agent System
 
-A high-performance LLM playground featuring Google's Gemma models with optimized quantization, persistent model server architecture, and a modern ChatGPT-like floating UI. Planning to integrate into Obsidian for a personal assistance style agent that proactively reads your note to organize and solve your problems.
+An intelligent AI agent powered by Qwen3-VL with autonomous tool usage capabilities. Features web search, webpage reading, local file access, and a modern ChatGPT-like interface with real-time tool execution display.
 
 ---
 
-## Currently working on: Obsidian Plugin
-> Details can be found in the OBSIDIAN_PLUGIN_DEVELOPMENT.md
+## Currently working on: Agent Tool Development
+> Implementing web search, content extraction, and file reading tools with autonomous usage
 
 ## ✨ Features
 
-- 🤖 **Gemma-3-27B & Gemma-3-12B**: Optimized 4-bit and 8-bit quantized models
+- 🤖 **Qwen3-VL-7B**: Advanced vision-language model with structured output
+- 🔧 **Autonomous Tool Usage**: Agent automatically decides when to use tools
+- 🔍 **Web Search**: Google search integration for current information
+- 📄 **Web Reader**: Extract and read content from any webpage
+- 📂 **File Reader**: Access local .md and .txt files
 - ⚡ **Server/Client Architecture**: Load model once, iterate instantly
-- 🪟 **Floating UI**: Modern ChatGPT-like interface with markdown rendering
-- 📊 **Real-time Streaming**: Token-by-token response generation
+- 🪟 **Agent UI**: Modern interface with real-time tool execution display
+- 📊 **Real-time Streaming**: See agent thinking and tool usage live
 - 🎯 **GPU Optimized**: RTX 5090 with bfloat16 support
 - 🔌 **HTTP API**: RESTful API for integration with other tools
+
+### Legacy Support
+- Gemma-3-27B & 12B models still available via `model_server.py`
 
 ---
 
@@ -40,51 +47,117 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Start the Model Server
+### 2. Start the Qwen Agent Server
 
 ```bash
 source venv/bin/activate.fish
-python src/model_server.py
+python src/qwen_agent_server.py
 ```
 *First load takes 2-6 minutes. Server keeps model in GPU memory.*
 
-### 3. Choose Your Interface
+### 3. Launch the Agent UI
 
-**Option A: Floating UI (Recommended)** 🪟
+**Agent UI with Tool Display (Recommended)** 🤖
 ```bash
-python src/floating_ui.py
+python src/agent_ui.py
 ```
-Modern ChatGPT-like window with markdown rendering.
+Modern interface showing real-time tool usage and agent reasoning.
 
-**Option B: Command-Line Client**
-```bash
-python src/model_client.py
-```
-Terminal-based interactive chat.
-
-**Option C: Standalone (No Server)**
-```bash
-python src/streaming_chat_27B_Q4.py
-```
-Simple standalone script (slower iteration).
+**Features:**
+- 🔍 Autonomous web search when needed
+- 📄 Automatic webpage content extraction
+- 📂 Local file reading on request
+- Real-time tool execution display
+- Toggle tool details visibility
 
 ---
 
-## 🪟 Floating UI Features
+## 🔧 Available Tools
 
-The floating UI (`src/floating_ui.py`) provides a modern chat experience:
+### 1. Web Search (`google_search`)
+Searches Google for current information, news, articles, etc.
+- Returns: Top search results with titles, URLs, and snippets
+- Autonomous: Agent decides when web search is needed
 
+### 2. Web Reader (`read_webpage`)
+Extracts main content from any webpage.
+- Input: URL from search results or user query
+- Returns: Clean text content without ads/navigation
+- Use case: Reading articles, documentation, etc.
+
+### 3. File Reader (`read_local_file`)
+Reads local markdown and text files.
+- Supports: `.md` and `.txt` files
+- Security: Path validation to prevent directory traversal
+- Returns: File content with metadata
+
+---
+
+## 🧠 How the Agent Works
+
+The agent uses Cursor-style autonomous tool calling:
+
+1. **User Query**: You ask a question
+2. **Agent Reasoning**: Qwen decides if tools are needed
+3. **Tool Execution**: Agent calls tools autonomously (can be parallel)
+4. **Iteration**: Agent can make multiple tool calls if needed
+5. **Final Response**: Agent synthesizes information and responds
+
+**Example Flow:**
+```
+User: "What's the latest news on AI safety?"
+↓
+Agent: *Thinks* "I need current information"
+↓
+Agent: *Calls google_search("AI safety news 2025")*
+↓
+Tool: *Returns search results*
+↓
+Agent: *Calls read_webpage(top_result_url)*
+↓
+Tool: *Returns article content*
+↓
+Agent: "Based on recent articles, here's what's happening..."
+```
+
+---
+
+## 🎛️ Legacy: Gemma Models
+
+**For non-agent chat (legacy):**
+```bash
+# Start Gemma server
+python src/model_server.py
+
+# Use Gemma UI
+python src/floating_ui.py
+```
+
+Gemma models are still available but don't support structured tool calling.
+
+---
+
+## 🤖 Agent UI Features
+
+The agent UI (`src/agent_ui.py`) provides an advanced chat experience:
+
+- **Real-time Tool Display**: See agent using tools live
+  - 🔍 Web search queries
+  - 📄 Webpage reading
+  - 📂 File access
+- **Tool Details Toggle** 🔧: Show/hide detailed tool execution
 - **Markdown Rendering**: Bold, italic, code blocks, headings, lists, quotes
 - **Pin Button** 📌: Keep window always on top
 - **Clear History** 🧹: Start fresh conversation
-- **Statistics** 📊: View token counts and session info
 - **Keyboard Shortcuts**:
   - `Enter`: Send message
   - `Shift+Enter`: New line in input
 
-<div align="center">
-  <em>Modern, responsive UI with real-time markdown rendering</em>
-</div>
+The UI dynamically shows:
+- When agent decides to use a tool
+- Tool parameters (search query, URL, file path)
+- Tool execution results (truncated for readability)
+- Final synthesized response
 
 ---
 
@@ -151,13 +224,20 @@ for prompt in prompts:
 
 ## 🛠️ Technology Stack
 
-- **Models**: Google Gemma-3-27B-IT (primary), Gemma-3-12B-IT (alternative)
-- **Quantization**: BitsAndBytes (4-bit/8-bit)
+- **Primary Model**: Qwen2-VL-7B-Instruct (upgradable to 30B)
+- **Agent Framework**: qwen-agent with structured function calling
+- **Tools**: 
+  - Web scraping: BeautifulSoup4, requests
+  - File access: pathlib with security validation
+- **Quantization**: BitsAndBytes (4-bit NF4)
 - **Framework**: HuggingFace Transformers
-- **Server**: Flask REST API
-- **UI**: Tkinter with custom markdown renderer
+- **Server**: Flask REST API with SSE streaming
+- **UI**: Tkinter with custom markdown and tool display
 - **GPU**: CUDA 12.1 with bfloat16 optimization
 - **Python**: 3.12.3
+
+### Legacy
+- **Legacy Models**: Gemma-3-27B-IT, Gemma-3-12B-IT (no tool support)
 
 ---
 
@@ -183,12 +263,16 @@ for prompt in prompts:
 ```
 Person/
 ├── src/
-│   ├── main.py                   # Core implementation (OOP)
-│   ├── model_server.py           # Flask API server
-│   ├── model_client.py           # CLI client
-│   ├── floating_ui.py            # GUI with markdown rendering ⭐
-│   ├── streaming_chat_27B_Q4.py  # Standalone 27B interface
-│   └── streaming_chat.py         # Standalone 12B interface
+│   ├── qwen_agent_server.py      # Qwen agent with tools ⭐ NEW
+│   ├── agent_ui.py               # Agent UI with tool display ⭐ NEW
+│   ├── tools/                    # Agent tools ⭐ NEW
+│   │   ├── web_search.py         # Google search tool
+│   │   ├── web_reader.py         # Webpage content extraction
+│   │   └── file_reader.py        # Local file reading
+│   ├── main.py                   # Core Gemma implementation (legacy)
+│   ├── model_server.py           # Gemma Flask server (legacy)
+│   ├── floating_ui.py            # Gemma UI (legacy)
+│   └── model_client.py           # CLI client (legacy)
 ├── requirements.txt              # Dependencies
 ├── README.md                     # This file
 └── MEMORY.md                     # Internal knowledge base
@@ -198,17 +282,22 @@ Person/
 
 ## 🎯 Model Specifications
 
-### Primary: Gemma-3-27B Q4
-- **Memory**: ~16GB VRAM
-- **Loading**: 2-6 minutes
-- **Quality**: Highest
-- **Output**: Up to 1000 tokens
+### Primary: Qwen2-VL-7B-Instruct (4-bit)
+- **Memory**: ~8-10GB VRAM
+- **Loading**: 2-4 minutes
+- **Quality**: High with vision support
+- **Tool Calling**: Native structured output
+- **Output**: Up to 2000 tokens
+- **Special**: Vision-language model (future-ready for images)
 
-### Alternative: Gemma-3-12B 8-bit
-- **Memory**: ~6-8GB VRAM
-- **Loading**: ~2 minutes  
-- **Quality**: High
-- **Output**: Up to 200 tokens
+### Upgrade Path: Qwen2-VL-30B-Instruct
+- **Memory**: ~16-20GB VRAM (4-bit)
+- **Quality**: Highest with vision
+- **Status**: Available for RTX 5090
+
+### Legacy: Gemma Models
+- Gemma-3-27B Q4: ~16GB VRAM, no tool support
+- Gemma-3-12B 8-bit: ~6-8GB VRAM, no tool support
 
 ---
 
@@ -350,11 +439,14 @@ See `requirements.txt` for Python package dependencies.
 
 ## 🌟 Recent Updates
 
-- ✅ **October 2025**: Added floating UI with markdown rendering
-- ✅ Implemented always-on-top pin feature
+- ✅ **October 2025 - Agent System**: Migrated to Qwen3-VL with tool support
+- ✅ **Tool Integration**: Web search, webpage reading, file access
+- ✅ **Agent UI**: Real-time tool execution display
+- ✅ **qwen-agent**: Structured function calling framework
+- ✅ Autonomous tool usage (Cursor-style)
+- ✅ Multi-turn agent reasoning
 - ✅ Server/client architecture for rapid development
-- ✅ Fixed deprecation warnings (dtype vs torch_dtype)
-- ✅ Complete requirements.txt with all dependencies
+- ✅ Complete requirements.txt with agent dependencies
 
 ---
 

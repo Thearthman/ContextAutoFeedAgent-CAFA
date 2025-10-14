@@ -1,8 +1,10 @@
 # MEMORY.md - Internal Project Knowledge Base
 
 **Last Updated**: October 2025  
-**Primary Model**: Gemma-3-27B-IT with 4-bit quantization  
-**Development Mode**: Server/Client architecture for rapid iteration
+**Primary Model**: Qwen2-VL-7B-Instruct with 4-bit quantization (agent-enabled)  
+**Legacy Model**: Gemma-3-27B-IT with 4-bit quantization (no tool support)  
+**Development Mode**: Server/Client architecture for rapid iteration  
+**New Feature**: Autonomous tool usage with qwen-agent framework
 
 ## 🎯 Purpose
 
@@ -43,7 +45,7 @@ cd "/mnt/p/Work/Personal/Person"
 
 ## 🔧 Model Technical Details
 
-### Gemma-3-27B Q4 Configuration (Primary, but uses 12B during development for better loading time)
+### Qwen2-VL-7B-Instruct Q4 Configuration (Primary - Agent System)
 ```python
 quantization_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -52,23 +54,58 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_use_double_quant=True
 )
 ```
-- **Actual VRAM usage**: ~16.3GB (not 7-10GB as docs claim)
-- **Loading time**: 2-6 minutes (varies by system load)
-- **Token speed**: ~15-25 tokens/sec
-- **Max tokens**: 1000 tokens configured
-- **Proven stable**: Use as primary configuration
+- **Model**: `Qwen/Qwen2-VL-7B-Instruct`
+- **VRAM usage**: ~8-10GB (4-bit quantization)
+- **Loading time**: 2-4 minutes
+- **Token speed**: ~20-30 tokens/sec (estimated)
+- **Max tokens**: 2000 tokens configured
+- **Special features**: 
+  - Vision-language model (supports images)
+  - Native structured output for tool calling
+  - Compatible with qwen-agent framework
+- **Upgrade path**: Can switch to Qwen2-VL-30B-Instruct (~16-20GB VRAM)
 
-### Gemma-3-12B 8-bit Configuration (Alternative)
+### Agent Framework: qwen-agent
+- **Purpose**: Structured function calling and tool orchestration
+- **Architecture**: Cursor-style autonomous tool usage
+- **Features**:
+  - Multi-turn reasoning
+  - Parallel tool execution support
+  - JSON-based function calling
+  - Built-in tool registration system
+
+### Tools Implemented
+1. **google_search**: Web search via scraping
+   - Returns: Top 10 results with titles, URLs, snippets
+   - Rate limiting: 1-second delay between requests
+2. **read_webpage**: HTML content extraction
+   - Uses BeautifulSoup4 for parsing
+   - Removes ads, navigation, scripts
+   - Max content: 5000 chars (configurable)
+3. **read_local_file**: Local file reader
+   - Supports: .md and .txt files only
+   - Security: Path validation, no directory traversal
+   - Max content: 10000 chars (configurable)
+
+### Legacy: Gemma-3-27B Q4 Configuration
+- **VRAM usage**: ~16.3GB
+- **Loading time**: 2-6 minutes
+- **Token speed**: ~15-25 tokens/sec
+- **Max tokens**: 1000 tokens
+- **Limitation**: No structured output, no tool support
+- **Status**: Still available via `model_server.py` for non-agent use
+
+### Legacy: Gemma-3-12B 8-bit Configuration
 - **VRAM usage**: ~6-8GB
 - **Loading time**: ~2 minutes
-- **Max tokens**: 200 tokens configured
-- **Use case**: Quick testing when 27B is too heavy
+- **Max tokens**: 200 tokens
+- **Use case**: Quick testing (legacy only)
 
 ### Critical Configuration Notes
 - **Always use**: `dtype=torch.bfloat16` (NOT `torch_dtype` - deprecated)
-- **8-bit 27B fails** without `llm_int8_enable_fp32_cpu_offload=True`
-- **4-bit is more reliable** for 27B than 8-bit
 - **RTX 5090 supports bfloat16** natively (Compute Capability 12.0)
+- **qwen-agent requirements**: Structured output support in model
+- **Tool security**: All file paths validated, only .md/.txt allowed
 
 ---
 
@@ -221,10 +258,15 @@ python src/floating_ui.py   # <1 sec startup
 
 ### User Preferences (from past conversations)
 
-- **Primary model**: Gemma-3-27B Q4 (quality over speed)
-- **Output length**: Long-form responses (1000 tokens)
+- **Primary model**: Qwen2-VL (agent-enabled, tool support)
+- **Secondary model**: Gemma-3-27B Q4 (legacy, quality over speed)
+- **Output length**: Long-form responses (2000 tokens for Qwen)
+- **Tool philosophy**: Cursor-style autonomous usage
+- **Vision capability**: Important for future (human-like agent)
+- **Structured output**: Critical for reliable tool calling
 - **No comparison files**: Don't create side-by-side comparisons
 - **Stick to requested implementations**: Don't add extra features
+- **Development approach**: Implement first, iterate based on testing
 
 ### Git Workflow
 
@@ -261,56 +303,101 @@ python src/floating_ui.py   # <1 sec startup
 
 ```
 src/
-├── main.py                   # OOP version, core implementation
-├── streaming_chat_27B_Q4.py  # Standalone 27B Q4 (simple)
-├── streaming_chat.py         # Standalone 12B 8-bit (simple)
-├── model_server.py           # Flask server (persistent model)
-├── model_client.py           # CLI client (instant restart)
-└── floating_ui.py            # GUI client with markdown ⭐ NEW
+├── qwen_agent_server.py      # ⭐ Qwen agent with tools (PRIMARY)
+├── agent_ui.py               # ⭐ Agent UI with tool display (PRIMARY)
+├── tools/                    # ⭐ Agent tools (NEW)
+│   ├── __init__.py
+│   ├── web_search.py         # Google search tool
+│   ├── web_reader.py         # Webpage content extraction
+│   └── file_reader.py        # Local file reading
+├── main.py                   # Gemma core implementation (LEGACY)
+├── model_server.py           # Gemma Flask server (LEGACY)
+├── model_client.py           # CLI client (LEGACY)
+├── floating_ui.py            # Gemma GUI (LEGACY)
+├── streaming_chat_27B_Q4.py  # Standalone 27B (LEGACY)
+└── streaming_chat.py         # Standalone 12B (LEGACY)
 
 Root:
-├── requirements.txt          # All dependencies
+├── requirements.txt          # All dependencies (including qwen-agent)
 ├── MEMORY.md                 # This file
 ├── README.md                 # User-facing docs
 └── venv/                     # Virtual environment
 ```
 
-**Implementation notes:**
-- `main.py` is the core - server/client/UI all use it
-  - `generate_response()` - Returns full response (for CLI client)
-  - `generate_response_stream()` - Yields tokens in real-time (for SSE streaming)
-  - `StopOnTokens` - Custom stopping criteria to handle Gemma's `<end_of_turn>` token
-- `model_server.py` has two endpoints:
-  - `/generate` - Returns complete response (blocking)
-  - `/generate_stream` - Streams tokens via Server-Sent Events
-- `floating_ui.py` uses SSE streaming for real-time token display
-- `streaming_chat_*.py` are standalone for simple use
-- **NO torch.compile()** - Removed to prevent graph breaks with quantized models
-- `model_server.py` keeps model in GPU, serves HTTP API
-- `model_client.py` is CLI interface to server
-- `floating_ui.py` is GUI interface with tkinter + markdown
+**Primary Implementation (Agent System):**
+- `qwen_agent_server.py`:
+  - Loads Qwen2-VL model with 4-bit quantization
+  - Registers three custom tools via qwen-agent
+  - Endpoints:
+    - `/generate` - Complete response with tool usage
+    - `/generate_stream` - SSE streaming with tool events
+    - `/clear_history` - Clear agent memory
+    - `/stats` - Agent statistics
+  - Port: 5001 (to avoid conflict with legacy server)
+  
+- `agent_ui.py`:
+  - Tkinter UI with markdown rendering
+  - Real-time tool execution display
+  - SSE event types:
+    - `tool_call`: When agent invokes a tool
+    - `tool_result`: When tool returns data
+    - `response`: Agent's final response tokens
+    - `error`: Error handling
+  - Features: Pin, clear history, tool details toggle
+  
+- `tools/` directory:
+  - Each tool implements qwen-agent's `BaseTool` class
+  - Includes `TOOL_DEFINITION` dict for agent registration
+  - Error handling returns strings (doesn't crash agent)
+  - Security: Path validation, rate limiting, content truncation
+
+**Legacy Implementation (Gemma):**
+- `main.py` - Core Gemma functionality
+- `model_server.py` - Gemma server (port 5000)
+- `floating_ui.py` - Gemma UI (no tool support)
+- Still functional but no agent capabilities
+
+**Development Workflow:**
+- **Agent development**: Modify `qwen_agent_server.py` → restart server (2-4 min)
+- **UI development**: Modify `agent_ui.py` → restart instantly
+- **Tool development**: Modify `tools/*.py` → restart server (2-4 min)
 
 ---
 
 ## 📋 Completed & Pending Tasks
 
-### ✅ Completed
+### ✅ Completed (October 2025)
 - [x] Fixed Python venv (WSL Python 3.12)
 - [x] Created requirements.txt with all versions
 - [x] Fixed torch_dtype deprecation warnings
 - [x] Implemented server/client architecture
-- [x] Created SERVER_SETUP.md documentation
 - [x] Built floating UI with markdown rendering
 - [x] Added always-on-top pin feature to UI
+- [x] **Migrated to Qwen2-VL-7B-Instruct**
+- [x] **Implemented qwen-agent framework**
+- [x] **Built autonomous tool system (Cursor-style)**
+- [x] **Created 3 core tools**: web search, web reader, file reader
+- [x] **Agent UI with real-time tool display**
+- [x] **SSE streaming for agent events**
 
-### 🚧 Future Improvements
-- [ ] Add LaTeX rendering to UI (for math formulas)
-- [ ] Implement Flash Attention 2 optimization
-- [ ] Add streaming token display in UI (SSE)
-- [ ] Create system tray icon for UI
+### 🚧 Next Steps (Agent System)
+- [ ] Test with real queries (web search, file reading)
+- [ ] Upgrade to Qwen2-VL-30B for better quality
+- [ ] Add Google Custom Search API option (vs scraping)
+- [ ] Implement vision capabilities (image input)
+- [ ] Add more tools:
+  - [ ] Calculator tool
+  - [ ] Code execution tool (sandboxed)
+  - [ ] Database query tool
+  - [ ] Obsidian note search tool
 - [ ] Add conversation export/import
-- [ ] Implement prompt templates
+- [ ] Implement prompt templates for agent
 - [ ] Add voice input/output
+
+### 🚧 Future Improvements (General)
+- [ ] Flash Attention 2 optimization
+- [ ] System tray icon for UI
+- [ ] LaTeX rendering (for math)
 
 ---
 
@@ -328,7 +415,17 @@ Root:
 
 ## 📝 Version History
 
-**October 2025:**
+**October 2025 - Agent System Migration:**
+- ✅ Migrated from Gemma to Qwen2-VL-7B-Instruct
+- ✅ Implemented qwen-agent framework
+- ✅ Built autonomous tool calling system (Cursor-style)
+- ✅ Created 3 core tools: google_search, read_webpage, read_local_file
+- ✅ Agent UI with real-time tool execution display
+- ✅ SSE streaming adapted for agent events
+- ✅ Updated requirements.txt with agent dependencies
+- ✅ Preserved legacy Gemma functionality
+
+**October 2025 - Earlier:**
 - ✅ Added floating UI with markdown rendering (`floating_ui.py`)
 - ✅ Server/client architecture fully functional
 - ✅ Fixed all deprecation warnings
