@@ -68,7 +68,7 @@ def load_config():
         except FileNotFoundError:
             pass
     
-    print(f"🔧 Configuration loaded:")
+    print(f"[INFO] Configuration loaded:")
     print(f"   Provider: {config['provider']}")
     print(f"   Model: {config['model']}")
     print(f"   API Key: {'Set' if config['api_key'] else 'Not set'}")
@@ -76,7 +76,7 @@ def load_config():
 def initialize_server():
     """Initialize server"""
     print("=" * 70)
-    print("🌐 Starting Online LLM Model Server...")
+    print("[INFO] Starting Online LLM Model Server...")
     print("=" * 70)
     
     load_config()
@@ -85,7 +85,7 @@ def initialize_server():
         print("⚠️  Warning: API Key not set, please set environment variable or create api_config.json")
         print("   Example: export LLM_API_KEY='your-api-key'")
     
-    print(f"🌐 Server ready, listening on http://localhost:5000")
+    print(f"[INFO] Server ready, listening on http://localhost:5000")
     print("=" * 70)
 
 class OnlineLLMClient:
@@ -427,7 +427,7 @@ def initialize_llm_client():
         base_url=config["base_url"]
     )
     
-    print(f"✅ LLM client initialized: {config['provider']} - {config['model']}")
+    print(f"[SUCCESS] LLM client initialized: {config['provider']} - {config['model']}")
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -461,7 +461,7 @@ def generate():
         temperature = data.get('temperature', config["temperature"])
         top_p = data.get('top_p', config["top_p"])
         
-        print(f"\n📨 Request received: {prompt[:50]}...")
+        print(f"\n[INFO] Request received: {prompt[:50]}...")
         
         # Generate response
         with model_lock:
@@ -507,7 +507,7 @@ def generate_stream():
         def generate_sse():
             """Generate Server-Sent Events"""
             try:
-                print(f"\n📨 Streaming request: {prompt[:50]}...")
+                print(f"\n[INFO] Streaming request: {prompt[:50]}...")
                 
                 full_response = ""
                 
@@ -603,10 +603,82 @@ def update_config():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api_key_status', methods=['GET'])
+def api_key_status():
+    """Check API key status"""
+    return jsonify({
+        "has_api_key": bool(config["api_key"]),
+        "provider": config["provider"]
+    })
+
+@app.route('/set_api_key', methods=['POST'])
+def set_api_key():
+    """Set API key"""
+    try:
+        data = request.json
+        api_key = data.get('api_key', '').strip()
+        
+        if not api_key:
+            return jsonify({"error": "API key is required"}), 400
+        
+        config['api_key'] = api_key
+        
+        # Reinitialize client with new API key
+        try:
+            initialize_llm_client()
+            return jsonify({"message": "API key set successfully"})
+        except Exception as e:
+            return jsonify({"error": f"Failed to initialize with API key: {str(e)}"}), 400
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/test_api_key', methods=['POST'])
+def test_api_key():
+    """Test API key validity"""
+    try:
+        data = request.json
+        api_key = data.get('api_key', '').strip()
+        test_mode = data.get('test', False)
+        
+        if not api_key:
+            return jsonify({"valid": False, "error": "API key is required"}), 400
+        
+        # Temporarily set the API key for testing
+        original_api_key = config['api_key']
+        config['api_key'] = api_key
+        
+        try:
+            # Initialize client to test the API key
+            initialize_llm_client()
+            
+            # If we get here, the API key is valid
+            if test_mode:
+                # Restore original API key for test mode
+                config['api_key'] = original_api_key
+                if original_api_key:
+                    initialize_llm_client()
+            
+            return jsonify({"valid": True, "message": "API key is valid"})
+            
+        except Exception as e:
+            # Restore original API key on error
+            config['api_key'] = original_api_key
+            if original_api_key:
+                try:
+                    initialize_llm_client()
+                except:
+                    pass
+            
+            return jsonify({"valid": False, "error": str(e)})
+        
+    except Exception as e:
+        return jsonify({"valid": False, "error": str(e)}), 500
+
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
     """Shutdown server"""
-    print("\n🛑 Shutdown request received...")
+    print("\n[INFO] Shutdown request received...")
     return jsonify({"message": "Server shutting down..."})
 
 if __name__ == "__main__":
@@ -620,5 +692,6 @@ if __name__ == "__main__":
         print(f"⚠️  LLM client initialization failed: {e}")
         print("   Server will still start, but API Key needs to be configured manually")
     
-    # Start Flask server
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    # Start Flask server on port 5001 to avoid conflict with local model server
+    print(f"\n[INFO] Starting online API server on port 5001...")
+    app.run(host='0.0.0.0', port=5001, debug=False, threaded=True)

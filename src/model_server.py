@@ -31,15 +31,15 @@ def initialize_model():
     """Initialize the model once at startup."""
     global model
     print("=" * 70)
-    print("🚀 Starting Gemma Model Server...")
+    print("Starting Gemma Model Server...")
     print("=" * 70)
     start_time = time.time()
     
     model = GemmaStreamingChat()
     
     load_time = time.time() - start_time
-    print(f"\n✅ Model loaded successfully in {load_time:.1f} seconds")
-    print(f"🌐 Server ready to accept requests on http://localhost:5000")
+    print(f"\n[SUCCESS] Model loaded successfully in {load_time:.1f} seconds")
+    print(f"[INFO] Server ready to accept requests on http://localhost:5000")
     print("=" * 70)
 
 @app.route('/health', methods=['GET'])
@@ -84,7 +84,7 @@ def generate():
         top_p = data.get('top_p', 0.9)
         top_k = data.get('top_k', 40)
         
-        print(f"\n📨 Received request: {prompt[:50]}...")
+        print(f"\n[INFO] Received request: {prompt[:50]}...")
         
         # Thread-safe generation
         with model_lock:
@@ -125,7 +125,7 @@ def generate_stream():
         def generate_sse():
             """Generate Server-Sent Events with real token streaming."""
             try:
-                print(f"\n📨 Streaming request: {prompt[:50]}...")
+                print(f"\n[INFO] Streaming request: {prompt[:50]}...")
                 
                 # Use the new streaming method that yields tokens
                 with model_lock:
@@ -201,7 +201,7 @@ def update_system_prompt():
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
     """Gracefully shutdown the server."""
-    print("\n🛑 Shutting down server...")
+    print("\n[INFO] Shutting down server...")
     
     # Clean up GPU memory
     import torch

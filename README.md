@@ -20,14 +20,46 @@ A high-performance LLM playground featuring Google's Gemma models with optimized
 
 ---
 
-## 🚀 Quick Start
+## 🚀 一键启动
 
-### 1. Installation
+### 🎯 最简单的方式
+
+**Windows用户:**
+```cmd
+start.bat
+```
+
+**Linux/Mac用户:**
+```bash
+./start.sh
+```
+
+**Python用户:**
+```bash
+python start.py
+```
+
+### 📋 启动模式选择
+
+一键启动脚本支持以下模式：
+
+1. **模型服务器** - 启动HTTP API服务器 (端口5000)
+2. **浮动UI界面** - 启动图形界面（需要服务器）
+3. **内存工具API** - 启动内存管理API (端口8000)
+4. **独立模式** - 直接运行（较慢）
+5. **全部启动** - 启动所有服务
+6. **安装依赖** - 安装/更新依赖包
+
+### 🔧 手动启动（高级用户）
+
+如果您需要手动控制启动过程：
+
+#### 1. 安装依赖
 
 ```bash
 # Clone repository
 git clone <repository-url>
-cd Person
+cd ContextAutoFeedAgent-CAFA
 
 # Create virtual environment
 python3.12 -m venv venv
@@ -42,33 +74,33 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Start the Model Server
+#### 2. 启动模型服务器
 
 ```bash
 source venv/bin/activate.fish
 python src/model_server.py
 ```
-*First load takes 2-6 minutes. Server keeps model in GPU memory.*
+*首次加载需要2-6分钟。服务器将模型保持在GPU内存中。*
 
-### 3. Choose Your Interface
+#### 3. 选择您的界面
 
-**Option A: Floating UI (Recommended)** 🪟
+**选项A: 浮动UI界面（推荐）** 🪟
 ```bash
 python src/floating_ui.py
 ```
-Modern ChatGPT-like window with markdown rendering.
+现代化的ChatGPT风格窗口，支持markdown渲染。
 
-**Option B: Command-Line Client**
+**选项B: 命令行客户端**
 ```bash
 python src/model_client.py
 ```
-Terminal-based interactive chat.
+基于终端的交互式聊天。
 
-**Option C: Standalone (No Server)**
+**选项C: 独立模式（无服务器）**
 ```bash
-python src/streaming_chat_27B_Q4.py
+python src/main.py
 ```
-Simple standalone script (slower iteration).
+简单的独立脚本（迭代较慢）。
 
 ---
 

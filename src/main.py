@@ -66,7 +66,7 @@ class GemmaStreamingChat:
         self.total_tokens_generated = 0
         self.conversation_count = 0
         
-        print(f"🚀 Initializing Gemma-3-27B Q4 Streaming Chat...")
+        print(f"[INFO] Initializing Gemma-3-27B Q4 Streaming Chat...")
         self._optimize_loading_environment()
         self._load_model()
         self._show_system_info()
@@ -74,7 +74,7 @@ class GemmaStreamingChat:
     def _load_model(self) -> None:
         """Load the Gemma model with optimal 4-bit quantization and fast loading optimizations."""
         print("Loading model with 4-bit quantization and fast loading optimizations...")
-        print("📊 Expected memory usage: ~7-10GB (vs ~54GB full precision)")
+        print("[INFO] Expected memory usage: ~7-10GB (vs ~54GB full precision)")
         
         # Optimal 4-bit quantization configuration
         quantization_config = BitsAndBytesConfig(
@@ -109,8 +109,8 @@ class GemmaStreamingChat:
             self.processor.tokenizer.pad_token = self.processor.tokenizer.eos_token
         
         # DEBUG: Print EOS token info and find stop tokens
-        print(f"🔍 EOS token ID: {self.processor.tokenizer.eos_token_id}")
-        print(f"🔍 EOS token: '{self.processor.tokenizer.eos_token}'")
+        print(f"[DEBUG] EOS token ID: {self.processor.tokenizer.eos_token_id}")
+        print(f"[DEBUG] EOS token: '{self.processor.tokenizer.eos_token}'")
         
         # Get stop token IDs for Gemma (including <end_of_turn>)
         self.stop_token_ids = []
@@ -123,11 +123,11 @@ class GemmaStreamingChat:
             end_of_turn_id = self.processor.tokenizer.convert_tokens_to_ids(end_of_turn_token)
             if end_of_turn_id != self.processor.tokenizer.unk_token_id:
                 self.stop_token_ids.append(end_of_turn_id)
-                print(f"🔍 Found <end_of_turn> token ID: {end_of_turn_id}")
+                print(f"[DEBUG] Found <end_of_turn> token ID: {end_of_turn_id}")
         except:
             pass
         
-        print(f"🔍 Stop token IDs: {self.stop_token_ids}")
+        print(f"[DEBUG] Stop token IDs: {self.stop_token_ids}")
         
         print("✅ Model loaded successfully!")
     
@@ -145,7 +145,7 @@ class GemmaStreamingChat:
             # Set memory management for faster loading
             torch.cuda.empty_cache()
             
-            print("⚡ CUDA optimizations enabled for faster loading")
+            print("[INFO] CUDA optimizations enabled for faster loading")
         
         # Optimize CPU operations for model loading
         torch.set_num_threads(min(8, torch.get_num_threads()))  # Optimal thread count
@@ -167,10 +167,10 @@ class GemmaStreamingChat:
             
             print(f"🖥️  GPU: {gpu_props.name}")
             print(f"💾 Memory: {allocated_memory:.1f}GB / {gpu_memory:.1f}GB used ({allocated_memory/gpu_memory*100:.1f}%)")
-            print(f"🚀 4-bit quantization: ~75% memory reduction!")
+            print(f"[INFO] 4-bit quantization: ~75% memory reduction!")
         
-        print(f"🎯 Ready for high-quality conversations!")
-        print(f"📝 System prompt: {self.system_prompt[:60]}...")
+        print(f"[SUCCESS] Ready for high-quality conversations!")
+        print(f"[INFO] System prompt: {self.system_prompt[:60]}...")
     
     def _build_conversation_context(self, user_input: str) -> List[Dict[str, Any]]:
         """
@@ -420,7 +420,7 @@ class GemmaStreamingChat:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         
-        print("🧹 Conversation history cleared.")
+        print("[INFO] Conversation history cleared.")
     
     def get_conversation_stats(self) -> Dict[str, Any]:
         """Get conversation statistics."""
@@ -435,7 +435,7 @@ class GemmaStreamingChat:
     def set_system_prompt(self, new_prompt: str) -> None:
         """Update the system prompt."""
         self.system_prompt = new_prompt
-        print(f"🎯 System prompt updated: {new_prompt[:60]}...")
+        print(f"[INFO] System prompt updated: {new_prompt[:60]}...")
     
     def chat_loop(self) -> None:
         """Main interactive chat loop."""
@@ -455,14 +455,14 @@ class GemmaStreamingChat:
                 
                 # Handle commands
                 if user_input.lower() in ['quit', 'exit', 'bye']:
-                    print("👋 Goodbye!")
+                    print("[INFO] Goodbye!")
                     break
                 elif user_input.lower() == 'clear':
                     self.clear_conversation_history()
                     continue
                 elif user_input.lower() == 'stats':
                     stats = self.get_conversation_stats()
-                    print(f"📊 Stats: {stats['total_turns']} turns, {stats['total_tokens_generated']} tokens, {stats['conversation_sessions']} sessions")
+                    print(f"[INFO] Stats: {stats['total_turns']} turns, {stats['total_tokens_generated']} tokens, {stats['conversation_sessions']} sessions")
                     continue
                 elif user_input.startswith('prompt '):
                     new_prompt = user_input[7:].strip()
@@ -474,9 +474,9 @@ class GemmaStreamingChat:
                 self.generate_response(user_input)
                 
         except KeyboardInterrupt:
-            print("\n👋 Chat interrupted. Goodbye!")
+            print("\n[INFO] Chat interrupted. Goodbye!")
         except Exception as e:
-            print(f"\n💥 Unexpected error: {e}")
+            print(f"\n[ERROR] Unexpected error: {e}")
         finally:
             # Cleanup
             if torch.cuda.is_available():

@@ -153,3 +153,9 @@ wandb/
 # Local configuration overrides
 config/local.yaml
 config/local.json
+api_config.json
+memory_data.json
+interactive_memory.json
+auto_retrieval_memory.json
+auto_retrieval_report.json
+chatgpt_export.json
