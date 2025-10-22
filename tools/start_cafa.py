@@ -23,7 +23,14 @@ class CAFALauncher:
     """CAFA统一启动器"""
     
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent
+        # Get project root (parent of tools directory)
+        self.project_root = Path(__file__).resolve().parent.parent
+        
+        # Verify project root
+        if not (self.project_root / "tests").exists():
+            print(f"[警告] 项目路径可能不正确: {self.project_root}")
+            print(f"[警告] tests 目录不存在")
+        
         self.services = {
             "memory_api": {
                 "name": "记忆API服务器",
