@@ -16,146 +16,69 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Virtual environments
-venv/
+# Virtual Environment
 env/
+venv/
 ENV/
-.venv/
-.env/
+env.bak/
+venv.bak/
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
+*.swn
+.DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Environment variables
-.env
-.env.local
-.env.production
-.env.development
+# pyenv
+.python-version
 
-# Model files and weights
-*.bin
-*.safetensors
-*.gguf
-*.ggml
-models/
-weights/
-checkpoints/
-
-# Data files
-data/documents/*
-!data/documents/.gitkeep
-data/embeddings/*
-!data/embeddings/.gitkeep
-data/memory/*
-!data/memory/.gitkeep
-data/temp/*
-!data/temp/.gitkeep
-
-# Vector databases
-*.faiss
-*.index
-chroma_db/
-pinecone_data/
-
-# Logs
-logs/
-*.log
-*.out
-
-# Cache
-.cache/
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
 
-# OS
+# 配置文件 - 包含敏感信息
+api_config.json
+.env
+*.key
+
+# 数据文件 - 用户数据
+data/*.json
+data/*.csv
+data/*.db
+!data/examples/
+!data/.gitkeep
+
+# 测试输出
+data/test_outputs/
+*.log
+test_outputs/
+*_memory.json
+*_report.json
+chatgpt_export.json
+conversations.json
+
+# 系统文件
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# Windows
 desktop.ini
 
-# Large files
-*.zip
-*.tar.gz
-*.rar
-*.7z
-
-# API keys and secrets
-config/secrets.yaml
-config/api_keys.json
-*.key
-*.pem
-*.p12
-
-# Temporary files
-tmp/
-temp/
+# 临时文件
 *.tmp
-*.temp
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Node modules (if using any JS tools)
-node_modules/
-
-# Backup files
 *.bak
-*.backup
+*~
 
-# Generated documentation
+# 文档构建
 docs/_build/
 site/
-
-# MLflow
-mlruns/
-mlartifacts/
-
-# Weights & Biases
-wandb/
-
-# HuggingFace cache
-.cache/huggingface/
-
-# Torch
-.torch/
-
-# CUDA
-*.cu.o
-*.cudafe*
-
-# Local configuration overrides
-config/local.yaml
-config/local.json
-api_config.json
-memory_data.json
-interactive_memory.json
-auto_retrieval_memory.json
-auto_retrieval_report.json
-chatgpt_export.json

@@ -1,60 +1,93 @@
-# Gemma LLM Playground
+# ContextAutoFeedAgent-CAFA
 
-A high-performance LLM playground featuring Google's Gemma models with optimized quantization, persistent model server architecture, and a modern ChatGPT-like floating UI. Planning to integrate into Obsidian for a personal assistance style agent that proactively reads your note to organize and solve your problems.
-
----
-
-## Currently working on: Obsidian Plugin & Memory Tool
-> Details can be found in the OBSIDIAN_PLUGIN_DEVELOPMENT.md
-> Memory Tool documentation: MEMORY_TOOL_README.md
-
-## ✨ Features
-
-- 🤖 **Gemma-3-27B & Gemma-3-12B**: Optimized 4-bit and 8-bit quantized models
-- ⚡ **Server/Client Architecture**: Load model once, iterate instantly
-- 🪟 **Floating UI**: Modern ChatGPT-like interface with markdown rendering
-- 📊 **Real-time Streaming**: Token-by-token response generation
-- 🎯 **GPU Optimized**: RTX 5090 with bfloat16 support
-- 🔌 **HTTP API**: RESTful API for integration with other tools
-- 🧠 **Memory Tool**: Semantic memory storage with time decay and vector search
+**An intelligent AI assistant system integrating LLM (Large Language Models) with a smart memory management system, featuring context-aware memory retrieval and human-like memory mechanisms.**
 
 ---
 
-## 🚀 一键启动
+## 🎯 Project Overview
 
-### 🎯 最简单的方式
+ContextAutoFeedAgent-CAFA (Context Auto Feed Agent) is a complete AI assistant system that combines:
+- **Multiple LLM Support**: Local models (Gemma) + Online APIs (OpenAI, Claude, Gemini, etc.)
+- **Intelligent Memory System**: Semantic memory storage with smart weight evaluation and time decay
+- **Modern UI**: ChatGPT-like floating interface with markdown rendering
+- **Obsidian Integration**: Designed for deep integration with knowledge management systems
 
-**Windows用户:**
-```cmd
-start.bat
+---
+
+## ✨ Key Features
+
+### 🤖 LLM Support
+- **Local Models**: 
+  - Gemma-3-27B (4-bit quantized)
+  - Gemma-3-12B (8-bit quantized)
+  - GPU optimized with CUDA support
+- **Online APIs**:
+  - OpenAI (GPT-3.5, GPT-4)
+  - Anthropic (Claude)
+  - Google (Gemini)
+  - Chinese LLMs (Qwen, ERNIE)
+  - Custom API endpoints
+
+### 🧠 Smart Memory System ⭐
+- **Semantic Vector Storage**: 384-dimensional embeddings with cosine similarity search
+- **Intelligent Weight Evaluation**: AI-powered importance assessment (10+ dimensions)
+- **5-Level Memory Classification**:
+  | Level | Weight | Half-life | Examples |
+  |-------|--------|-----------|----------|
+  | Permanent | ≥0.9 | 365 days | API keys, passwords, birthdays |
+  | Important | 0.75-0.89 | 90 days | Project info, meetings |
+  | Regular | 0.5-0.74 | 30 days | Learning content, preferences |
+  | Temporary | 0.3-0.49 | 7 days | Casual thoughts |
+  | Low Priority | <0.3 | 3 days | Small talk, greetings |
+- **Differential Decay**: Important memories last longer
+- **User Prompting**: Intelligent suggestions for weight adjustment
+
+### 🪟 Modern User Interface
+- **Floating UI**: ChatGPT-style interface with markdown rendering
+- **Real-time Streaming**: Token-by-token response generation
+- **Memory Management**: Visual memory retrieval and testing
+- **API Switching**: Easy toggle between different LLM services
+- **Pin Feature**: Keep window always on top
+
+### 🔌 Integrated Architecture
+```
+┌─────────────────────────────────────┐
+│     Floating UI (User Interface)    │
+└────────────┬────────────────────────┘
+             │
+             ↓
+┌────────────────────────────────────┐
+│   Integrated Service                │
+│   • Smart Memory Judgment           │
+│   • Auto Memory Retrieval           │
+│   • Auto Memory Storage             │
+└──────┬──────────────┬───────────────┘
+       │              │
+       ↓              ↓
+┌─────────────┐  ┌──────────────┐
+│  LLM Service │  │ Memory Service│
+│  (Online/    │  │ (Smart Weight)│
+│   Local)     │  │               │
+└─────────────┘  └──────────────┘
 ```
 
-**Linux/Mac用户:**
-```bash
-./start.sh
-```
+---
 
-**Python用户:**
-```bash
-python start.py
-```
+## 🚀 Quick Start
 
-### 📋 启动模式选择
+### Prerequisites
 
-一键启动脚本支持以下模式：
+**Hardware:**
+- 16GB+ RAM recommended
+- GPU with 16GB+ VRAM (for local models, optional)
+- ~50GB disk space for local models (optional)
 
-1. **模型服务器** - 启动HTTP API服务器 (端口5000)
-2. **浮动UI界面** - 启动图形界面（需要服务器）
-3. **内存工具API** - 启动内存管理API (端口8000)
-4. **独立模式** - 直接运行（较慢）
-5. **全部启动** - 启动所有服务
-6. **安装依赖** - 安装/更新依赖包
+**Software:**
+- Python 3.9+ (3.12 recommended)
+- CUDA 11.8+ (for local GPU models, optional)
+- Windows/Linux/WSL2
 
-### 🔧 手动启动（高级用户）
-
-如果您需要手动控制启动过程：
-
-#### 1. 安装依赖
+### Installation
 
 ```bash
 # Clone repository
@@ -62,69 +95,240 @@ git clone <repository-url>
 cd ContextAutoFeedAgent-CAFA
 
 # Create virtual environment
-python3.12 -m venv venv
-source venv/bin/activate.fish  # or: source venv/bin/activate
+python3 -m venv venv
 
-# Install system dependencies (required for floating UI on WSL/Linux)
-sudo apt-get update
-sudo apt-get install -y python3-tk
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
 
-# Install Python dependencies
+# Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### 2. 启动模型服务器
+### Launch
 
-```bash
-source venv/bin/activate.fish
-python src/model_server.py
+**Windows Users:**
+```cmd
+start_cafa.bat
 ```
-*首次加载需要2-6分钟。服务器将模型保持在GPU内存中。*
 
-#### 3. 选择您的界面
-
-**选项A: 浮动UI界面（推荐）** 🪟
+**All Platforms:**
 ```bash
-python src/floating_ui.py
+python start_cafa.py
 ```
-现代化的ChatGPT风格窗口，支持markdown渲染。
 
-**选项B: 命令行客户端**
-```bash
-python src/model_client.py
-```
-基于终端的交互式聊天。
+The unified launcher will guide you through:
+1. **System Startup** - Launch services for daily use
+2. **Testing** - Test memory tool functionality
 
-**选项C: 独立模式（无服务器）**
+### Recommended Quick Start
+
+**Option 1: Floating UI with Memory (Recommended) ⭐**
 ```bash
-python src/main.py
+python start_cafa.py
+# Select: 1 (System Startup) → 1 (Floating UI with Memory)
 ```
-简单的独立脚本（迭代较慢）。
+This starts:
+- Memory API Server (port 8000)
+- Floating UI
+
+**Option 2: Full System with Online API**
+```bash
+# Set API key first
+export OPENAI_API_KEY="your-api-key"
+# or create api_config.json
+
+python start_cafa.py
+# Select: 1 (System Startup) → 2 (Full System with Online API)
+```
+This starts:
+- Memory API Server (port 8000)
+- Online API Server (port 5001)
+- Floating UI
 
 ---
 
-## 🪟 Floating UI Features
+## 📁 Project Structure
 
-The floating UI (`src/floating_ui.py`) provides a modern chat experience:
+```
+ContextAutoFeedAgent-CAFA/
+│
+├── README.md                  # This file
+├── requirements.txt           # Python dependencies
+├── .gitignore                # Git ignore rules
+├── LICENSE                   # MIT License
+│
+├── start_cafa.py             # Unified launcher ⭐
+├── start_cafa.bat            # Windows quick start
+├── run_memory_api.py         # Memory API server
+├── api_config.json.example   # API configuration example
+│
+├── src/                      # Source code
+│   ├── main.py                      # Local model core
+│   ├── model_server.py              # Local model server
+│   ├── model_client.py              # Model client
+│   ├── online_model_server.py       # Online API server
+│   ├── advanced_floating_ui.py      # Floating UI ⭐
+│   ├── integrated_llm_memory.py     # Integrated service
+│   │
+│   └── memory_tool/                 # Memory system 🧠
+│       ├── __init__.py
+│       ├── memory_store.py          # Basic memory storage
+│       ├── enhanced_memory_store.py # Enhanced storage
+│       ├── smart_weight.py          # Smart weight evaluation ⭐
+│       ├── embeddings.py            # Text vectorization
+│       ├── decay.py                 # Time decay logic
+│       │
+│       └── api/                     # API interfaces
+│           ├── __init__.py
+│           ├── memory_manager.py    # Memory coordinator
+│           └── memory_api.py        # FastAPI endpoints
+│
+├── tests/                    # Tests
+│   ├── integration/
+│   │   └── test_integrated_system.py
+│   ├── test_memory_unit.py          # Unit tests
+│   ├── test_smart_memory.py         # Smart weight tests
+│   ├── auto_retrieval_test.py       # Auto retrieval tests
+│   ├── interactive_memory_test.py   # Interactive tests
+│   ├── import_chatgpt_history.py    # Import ChatGPT data
+│   └── README_IMPORT_TEST.md
+│
+├── data/                     # Data directory
+│   ├── test_outputs/                # Test outputs
+│   │   ├── auto_retrieval_memory.json
+│   │   ├── auto_retrieval_report.json
+│   │   └── interactive_memory.json
+│   └── README.md
+│
+├── examples/                 # Examples
+│   ├── data/
+│   │   └── chatgpt_export_example.json
+│   └── README.md
+│
+├── docs/                     # Documentation
+│   ├── guides/                      # User guides
+│   │   ├── online-llm-guide.md
+│   │   ├── server-setup.md
+│   │   └── (more guides...)
+│   │
+│   ├── development/                 # Development docs
+│   │   ├── architecture.md
+│   │   └── memory-weight-system.md
+│   │
+│   ├── api/                        # API documentation
+│   │   └── memory-tool.md
+│   │
+│   ├── PROJECT_SUMMARY.md          # Project summary
+│   └── OBSIDIAN_PLUGIN_DEVELOPMENT.md
+│
+├── plan/                     # Project planning
+│   ├── PROJECT_BOOK.md
+│   ├── PROJECT_BOOK_EN.md
+│   └── ROADMAP_2025.md
+│
+├── scripts/                  # Utility scripts
+│   └── README.md
+│
+└── tools/                    # Tools
+    └── README.md
+```
 
-- **Markdown Rendering**: Bold, italic, code blocks, headings, lists, quotes
-- **Pin Button** 📌: Keep window always on top
-- **Clear History** 🧹: Start fresh conversation
-- **Statistics** 📊: View token counts and session info
-- **Keyboard Shortcuts**:
-  - `Enter`: Send message
-  - `Shift+Enter`: New line in input
+---
 
-<div align="center">
-  <em>Modern, responsive UI with real-time markdown rendering</em>
-</div>
+## 💡 Core Innovations
+
+### 1. Smart Weight Evaluation System ⭐
+
+**Problem**: Traditional memory systems use the same decay rate for all memories, leading to:
+- Important information forgotten too quickly
+- Unimportant information taking up space
+- No priority differentiation
+
+**Solution**:
+- ✅ Automatic importance analysis (10+ dimensions)
+- ✅ 5-level classification management
+- ✅ Differential decay (permanent memories decay 50% in 1 year vs 3 days for low priority)
+- ✅ User prompting mechanism
+
+**Evaluation Dimensions**:
+- Explicit memory markers ("remember", "important", "don't forget")
+- Question vs statement
+- Personal information (names, dates, preferences)
+- Technical details (code, commands, configurations)
+- Emotional content
+- Length and detail level
+- Temporal indicators (deadlines, schedules)
+
+### 2. Integrated Architecture ✅
+
+**User Mode**:
+- Automatically judges if memory retrieval is needed
+- Smart context enhancement
+- Transparent memory usage
+
+**Update Memory Mode**:
+- Automatically stores important conversations
+- Smart weight evaluation
+- Differential decay strategy
+
+### 3. Multi-LLM Support ⭐
+
+No GPU required! Support for:
+- OpenAI (GPT-3.5, GPT-4)
+- Anthropic (Claude)
+- Google (Gemini)
+- Chinese LLMs (Qwen, ERNIE)
+- Local models (with GPU)
+- Custom API endpoints
 
 ---
 
 ## 📖 Usage Examples
 
-### Python API
+### Python API - Memory Tool
+
+```python
+from src.memory_tool.enhanced_memory_store import EnhancedMemoryStore
+
+# Create enhanced memory store
+store = EnhancedMemoryStore()
+
+# Add memories (auto weight evaluation)
+store.add_memory("I learned Python programming today")
+# Auto-evaluated weight: ~0.6 (Regular memory, 30-day half-life)
+
+store.add_memory("Remember: My birthday is March 15th")
+# Auto-evaluated weight: 1.0 (Permanent memory, 365-day half-life)
+
+# Search memories
+results = store.search("Python learning", top_k=3)
+for result in results:
+    print(f"Memory: {result['text']}")
+    print(f"Similarity: {result['similarity']}")
+    print(f"Weight: {result['importance']}")
+
+# Time decay (differential based on weight)
+store.decay()
+```
+
+### REST API - Memory Service
+
+```bash
+# Store memory
+curl -X POST "http://localhost:8000/store?text=I%20learned%20Python%20today"
+
+# Retrieve memory
+curl "http://localhost:8000/recall?query=Python%20learning"
+
+# Trigger decay
+curl -X POST "http://localhost:8000/decay"
+```
+
+### Python API - LLM Client
 
 ```python
 from src.model_client import GemmaClient
@@ -136,172 +340,170 @@ client = GemmaClient()
 response = client.generate("Explain quantum computing")
 print(response)
 
-# Clear conversation history
+# Clear history
 client.clear_history()
-
-# Get statistics
-stats = client.get_stats()
-print(f"Total tokens: {stats['total_tokens_generated']}")
 ```
-
-### HTTP API (cURL)
-
-```bash
-# Generate response
-curl -X POST http://localhost:5000/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Hello!", "max_new_tokens": 500}'
-
-# Check server health
-curl http://localhost:5000/health
-
-# Clear conversation history
-curl -X POST http://localhost:5000/clear_history
-
-# Get statistics
-curl http://localhost:5000/stats
-```
-
-### Quick Test Script
-
-```python
-from src.model_client import GemmaClient
-
-client = GemmaClient()
-
-# Test multiple prompts
-prompts = [
-    "What is machine learning?",
-    "Explain neural networks",
-    "What is a transformer?"
-]
-
-for prompt in prompts:
-    response = client.generate(prompt, max_new_tokens=200)
-    print(f"Q: {prompt}\nA: {response}\n")
-```
-
----
-
-## 🛠️ Technology Stack
-
-- **Models**: Google Gemma-3-27B-IT (primary), Gemma-3-12B-IT (alternative)
-- **Quantization**: BitsAndBytes (4-bit/8-bit)
-- **Framework**: HuggingFace Transformers
-- **Server**: Flask REST API
-- **UI**: Tkinter with custom markdown renderer
-- **GPU**: CUDA 12.1 with bfloat16 optimization
-- **Python**: 3.12.3
-
----
-
-## ⚡ Why Server/Client Architecture?
-
-**Traditional Approach:**
-- Each code change requires 2-6 minute model reload
-- Testing 3 prompts = 6-18 minutes
-- GPU memory cleared on every restart
-
-**Our Approach:**
-- Model loads once (2-6 min initial)
-- Code changes restart in <1 second
-- Testing 3 prompts = 2-6 minutes (first load only)
-- GPU memory stays loaded
-
-**Result:** 3x-10x faster development iteration! 🚀
-
----
-
-## 📁 Project Structure
-
-```
-ContextAutoFeedAgent-CAFA/
-├── src/
-│   ├── main.py                   # Core implementation (OOP)
-│   ├── model_server.py           # Flask API server
-│   ├── floating_ui.py            # GUI with markdown rendering ⭐
-│   └── memory_tool/              # Memory system 🧠
-│       ├── embeddings.py         # Text vectorization
-│       ├── memory_store.py       # Storage and retrieval
-│       ├── decay.py              # Time decay logic
-│       └── api/                  # API interfaces
-│           ├── memory_manager.py # Memory coordinator
-│           └── memory_api.py     # FastAPI endpoints
-├── tests/
-│   └── test_memory.py            # Memory tests
-├── run_memory_api.py             # API server launcher
-├── test_memory_basic.py          # Quick tests
-├── requirements.txt              # Dependencies
-├── README.md                     # This file
-├── MEMORY.md                     # Internal knowledge base
-├── MEMORY_TOOL_README.md         # Memory Tool documentation
-└── OBSIDIAN_PLUGIN_DEVELOPMENT.md # Plugin development guide
-```
-
----
-
-## 🎯 Model Specifications
-
-### Primary: Gemma-3-27B Q4
-- **Memory**: ~16GB VRAM
-- **Loading**: 2-6 minutes
-- **Quality**: Highest
-- **Output**: Up to 1000 tokens
-
-### Alternative: Gemma-3-12B 8-bit
-- **Memory**: ~6-8GB VRAM
-- **Loading**: ~2 minutes  
-- **Quality**: High
-- **Output**: Up to 200 tokens
 
 ---
 
 ## 🔧 Configuration
 
-Models are automatically cached to G drive to save space:
-```fish
-# In venv/bin/activate.fish
-set -gx HF_HOME /mnt/g/huggingface
-set -gx TRANSFORMERS_CACHE /mnt/g/huggingface
-set -gx HF_DATASETS_CACHE /mnt/g/huggingface
+### Online API Configuration
+
+**Method 1: Environment Variables**
+```bash
+export OPENAI_API_KEY="your-api-key"
+export LLM_PROVIDER="openai"  # openai, anthropic, google, qwen, ernie
+```
+
+**Method 2: Configuration File**
+```bash
+# Copy example config
+cp api_config.json.example api_config.json
+
+# Edit api_config.json
+{
+  "provider": "openai",
+  "api_key": "your-api-key",
+  "model": "gpt-3.5-turbo",
+  "base_url": "https://api.openai.com/v1"  # optional
+}
+```
+
+### Local Model Configuration
+
+Models are cached to save space:
+```bash
+# Set HuggingFace cache directory
+export HF_HOME=/path/to/cache
+export TRANSFORMERS_CACHE=/path/to/cache
 ```
 
 ---
 
-## 🤝 API Reference
+## 🧪 Testing
 
-### Server Endpoints
+### Quick Test - Floating UI Retrieval Test (Recommended) ⭐
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Server health check |
-| `/generate` | POST | Generate response |
-| `/clear_history` | POST | Clear conversation |
-| `/stats` | GET | Get statistics |
-| `/update_system_prompt` | POST | Change system prompt |
-| `/shutdown` | POST | Shutdown server |
-
-### Generate Request Format
-
-```json
-{
-  "prompt": "Your question here",
-  "max_new_tokens": 1000,
-  "temperature": 0.7,
-  "top_p": 0.9,
-  "top_k": 40
-}
+```bash
+python start_cafa.py
+# Select: 2 (Testing) → 1 (Floating UI Retrieval Test)
 ```
 
-### Response Format
+This will:
+1. Import ChatGPT history to memory system
+2. Start Memory API server (background)
+3. Open floating UI for visual retrieval testing
 
-```json
-{
-  "response": "Generated text...",
-  "prompt": "Your question here",
-  "timestamp": 1234567890.123
-}
+### Automated Retrieval Test
+
+```bash
+python tests/auto_retrieval_test.py --conversations 5 --messages 20
 ```
+
+### Interactive Memory Test
+
+```bash
+python tests/interactive_memory_test.py
+```
+
+### Unit Tests
+
+```bash
+python tests/test_memory_unit.py
+```
+
+---
+
+## 📊 Performance Metrics
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| **Vector Dimension** | 384 | Semantic vectors |
+| **Search Speed** | <100ms | Within 1000 memories |
+| **Weight Evaluation** | <50ms | Per memory |
+| **Memory Usage** | ~2GB | Including embedding model |
+| **Storage Efficiency** | ~1KB/memory | JSON format |
+| **Retrieval Accuracy** | ≥95% | Semantic search |
+
+---
+
+## 🎯 Use Cases
+
+### 1. Personal AI Assistant
+- Remember user preferences
+- Track project progress
+- Remind important matters
+
+### 2. Knowledge Management
+- Learning notes management
+- Automatic categorization
+- Smart review reminders
+
+### 3. Project Development
+- Tech stack recording
+- Bug tracking
+- Decision history
+
+### 4. Obsidian Integration (Planned)
+- Automatic note indexing
+- Related content recommendations
+- Smart review system
+
+---
+
+## 🗺️ Roadmap
+
+### Q4 2025 (October - December)
+
+**Phase 1: Obsidian Plugin Development** (October)
+- Week 1-2: Plugin MVP and chat interface
+- Week 3-4: Smart note features and optimization
+
+**Phase 2: System Optimization** (November)
+- Week 5-6: Memory system and performance optimization
+- Week 7-8: UI improvements and integration testing
+
+**Phase 3: Release Preparation** (December)
+- Week 9-10: Documentation and open source release
+- Week 11-12: Community feedback and iteration
+
+See [ROADMAP_2025.md](plan/ROADMAP_2025.md) for details.
+
+---
+
+## 📚 Documentation
+
+### User Guides
+- [Getting Started](docs/guides/getting-started-testing.md)
+- [Online LLM Guide](docs/guides/online-llm-guide.md)
+- [Server Setup](docs/guides/server-setup.md)
+- [Floating UI Testing Guide](docs/悬浮窗口检索测试指南.md)
+
+### Development Docs
+- [Architecture](docs/development/architecture.md)
+- [Memory Weight System](docs/development/memory-weight-system.md)
+- [Project Summary](docs/PROJECT_SUMMARY.md)
+
+### API Reference
+- [Memory Tool API](docs/api/memory-tool.md)
+- Swagger UI: `http://localhost:8000/docs` (when Memory API is running)
+- ReDoc: `http://localhost:8000/redoc`
+
+---
+
+## 🛠️ Technology Stack
+
+- **Models**: 
+  - Local: Google Gemma-3-27B-IT, Gemma-3-12B-IT
+  - Online: OpenAI, Anthropic, Google, Qwen, ERNIE
+- **Embeddings**: Sentence-Transformers (all-MiniLM-L6-v2)
+- **Quantization**: BitsAndBytes (4-bit/8-bit)
+- **Framework**: HuggingFace Transformers
+- **Backend**: Flask, FastAPI
+- **UI**: Tkinter with custom markdown renderer
+- **GPU**: CUDA 12.1 with bfloat16 optimization
+- **Python**: 3.12.3
 
 ---
 
@@ -309,102 +511,82 @@ set -gx HF_DATASETS_CACHE /mnt/g/huggingface
 
 **Server won't start:**
 ```bash
-# Check if port 5000 is already in use
-lsof -i :5000
+# Check if port is in use
+# Windows:
+netstat -ano | findstr :8000
+# Linux/Mac:
+lsof -i :8000
+
+# Kill process if needed
+# Windows:
+taskkill /PID <PID> /F
+# Linux/Mac:
 kill -9 <PID>
-```
-
-**Client can't connect:**
-```bash
-# Verify server is running
-curl http://localhost:5000/health
-```
-
-**UI window won't open:**
-```bash
-# On WSL/Linux, install tkinter first
-sudo apt-get install -y python3-tk
-
-# Test tkinter availability
-python -c "import tkinter"
 ```
 
 **Import errors:**
 ```bash
-# Always run from project root, not from src/
+# Always run from project root
 python src/model_server.py  ✅
 cd src && python model_server.py  ❌
 ```
 
-For detailed troubleshooting, see `MEMORY.md`.
-
----
-
-## 📊 Performance
-
-| Metric | Value |
-|--------|-------|
-| Model load time | 2-6 minutes |
-| Token generation | 15-25 tokens/sec |
-| Client startup | <1 second |
-| Memory footprint | ~16GB VRAM |
-
----
-
-## 🧪 Development
-
-### Running Tests
-
-```python
-# Quick test multiple prompts
-python src/model_client.py
-# Then use quick_test() function
-```
-
-### Modifying the UI
-
+**UI won't open (WSL/Linux):**
 ```bash
-# Edit floating_ui.py, then restart (instant)
-python src/floating_ui.py
+# Install tkinter
+sudo apt-get install -y python3-tk
+
+# Test tkinter
+python -c "import tkinter"
 ```
 
-### Adding New Features
-
-1. Start server: `python src/model_server.py`
-2. Edit client code: `src/model_client.py` or `src/floating_ui.py`
-3. Restart client: `<1 second` (model stays loaded!)
-
----
-
-## 📝 Requirements
-
-**Hardware:**
-- NVIDIA GPU with CUDA support (16GB+ VRAM recommended)
-- 32GB+ RAM
-- ~50GB disk space for models
-
-**Software:**
-- Python 3.9+
-- CUDA 11.8+ (12.1 recommended)
-- Linux (WSL2 on Windows supported)
-
-See `requirements.txt` for Python package dependencies.
+**Model download fails:**
+```bash
+# Set HuggingFace mirror
+export HF_ENDPOINT=https://hf-mirror.com
+```
 
 ---
 
 ## 🌟 Recent Updates
 
-- ✅ **October 2025**: Added floating UI with markdown rendering
-- ✅ Implemented always-on-top pin feature
-- ✅ Server/client architecture for rapid development
-- ✅ Fixed deprecation warnings (dtype vs torch_dtype)
-- ✅ Complete requirements.txt with all dependencies
+- ✅ **October 2025**: Project reorganization (GitHub standard structure)
+- ✅ Smart memory weight evaluation system
+- ✅ Integrated LLM memory service
+- ✅ Online API support (OpenAI, Claude, Gemini, etc.)
+- ✅ Unified launcher (start_cafa.py)
+- ✅ Advanced floating UI with memory management
+- ✅ Comprehensive testing framework
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit Issues and Pull Requests.
+
+### Development Setup
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd ContextAutoFeedAgent-CAFA
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+python tests/test_memory_unit.py
+```
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -413,17 +595,22 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Google Gemma Documentation](https://ai.google.dev/gemma)
 - [BitsAndBytes Quantization](https://github.com/TimDettmers/bitsandbytes)
 - [HuggingFace Transformers](https://huggingface.co/docs/transformers)
+- [Sentence-Transformers](https://www.sbert.net/)
+- [FastAPI](https://fastapi.tiangolo.com/)
 
 ---
 
 ## 📞 Support
 
-- Check `MEMORY.md` for detailed troubleshooting
+- Check [docs/](docs/) for detailed documentation
 - Open an issue for bugs or feature requests
 - Review server logs for debugging
+- See [PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md) for complete project overview
 
 ---
 
 <div align="center">
-  <strong>Built with ❤️ for rapid LLM experimentation</strong>
+  <strong>Built with ❤️ for intelligent context-aware AI assistance</strong>
+  <br><br>
+  <em>ContextAutoFeedAgent-CAFA - Your Personal AI with Human-like Memory</em>
 </div>
