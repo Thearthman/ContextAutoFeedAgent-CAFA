@@ -23,7 +23,7 @@ class CAFALauncher:
     """CAFA统一启动器"""
     
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent
+        self.project_root = Path(__file__).parent
         self.services = {
             "memory_api": {
                 "name": "记忆API服务器",
