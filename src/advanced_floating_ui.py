@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-完整增强版浮动UI - 集成API切换和记忆功能
+Advanced Floating UI - Integrated API switching and memory features
 """
 
 import tkinter as tk
@@ -12,14 +12,24 @@ import time
 from datetime import datetime
 from typing import Optional, Dict, List
 
+# Import UI text constants
+try:
+    from src.ui_text import (MAIN_UI, BUTTONS, MODEL_SELECTION, API_KEY_DIALOG, 
+                              MEMORY_DIALOG, MESSAGES, STATUS, CHAT)
+except ImportError:
+    # Fallback if import fails
+    from ui_text import (MAIN_UI, BUTTONS, MODEL_SELECTION, API_KEY_DIALOG,
+                         MEMORY_DIALOG, MESSAGES, STATUS, CHAT)
+
+
 class AdvancedFloatingChatUI:
-    """完整增强版浮动聊天UI"""
+    """Advanced floating chat UI with full features"""
     
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("CAFA - Context Auto Feed Agent")
+        self.root.title(MAIN_UI["title"])
         
-        # 颜色主题
+        # Color theme
         self.bg_color = "#1e1e1e"
         self.text_color = "#e0e0e0"
         self.accent_color = "#007acc"
@@ -27,26 +37,26 @@ class AdvancedFloatingChatUI:
         self.error_color = "#f48771"
         self.memory_color = "#ce9178"
         
-        # 服务器配置
-        self.server_url = "http://localhost:5001"  # 默认在线API服务器
-        self.memory_url = "http://localhost:8000"   # 记忆API服务器
+        # Server configuration
+        self.server_url = "http://localhost:5001"  # Default online API server
+        self.memory_url = "http://localhost:8000"   # Memory API server
         
-        # 服务器信息
+        # Server information
         self.server_info = {}
         self.memory_enabled = False
         
-        # 对话历史
+        # Conversation history
         self.conversation_history = []
         
-        # 初始化UI
+        # Initialize UI
         self._setup_ui()
         
-        # 检查服务器状态
+        # Check server status
         self._check_all_services()
         
     def _setup_ui(self):
-        """设置UI界面"""
-        # 设置窗口大小和位置
+        """Setup UI interface"""
+        # Set window size and position
         window_width = 450
         window_height = 700
         screen_width = self.root.winfo_screenwidth()
@@ -57,92 +67,107 @@ class AdvancedFloatingChatUI:
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
         self.root.configure(bg=self.bg_color)
         
-        # 设置窗口属性
+        # Set window properties
         self.root.attributes('-topmost', True)
         
-        # 创建主框架
+        # Create main frame
         main_frame = tk.Frame(self.root, bg=self.bg_color)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # 顶部状态栏
+        # Top status bar
         self._create_status_bar(main_frame)
         
-        # 控制按钮区域
+        # Control buttons area
         self._create_control_buttons(main_frame)
         
-        # 聊天显示区域
+        # Chat display area
         self._create_chat_display(main_frame)
         
-        # 输入区域
+        # Input area
         self._create_input_area(main_frame)
         
     def _create_status_bar(self, parent):
-        """创建状态栏"""
+        """Create status bar"""
         status_frame = tk.Frame(parent, bg=self.bg_color)
         status_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # 标题
+        # Title
         title_label = tk.Label(
             status_frame,
-            text="CAFA - Context Auto Feed Agent",
+            text=MAIN_UI["title"],
             font=("Arial", 14, "bold"),
             fg=self.accent_color,
             bg=self.bg_color
         )
         title_label.pack(pady=(0, 10))
         
-        # 服务状态框架
+        # Service status frame
         services_frame = tk.Frame(status_frame, bg=self.bg_color)
         services_frame.pack(fill=tk.X)
         
-        # API服务器状态
+        # API server status
         self.api_status_label = tk.Label(
             services_frame,
-            text="API: 检测中...",
+            text=STATUS["api_detecting"],
             font=("Arial", 9),
             fg=self.text_color,
             bg=self.bg_color
         )
         self.api_status_label.pack(side=tk.LEFT, padx=5)
         
-        # 记忆服务状态
+        # Memory service status
         self.memory_status_label = tk.Label(
             services_frame,
-            text="记忆: 检测中...",
+            text=STATUS["memory_detecting"],
             font=("Arial", 9),
             fg=self.text_color,
             bg=self.bg_color
         )
         self.memory_status_label.pack(side=tk.LEFT, padx=5)
         
-        # 分隔线
+        # Separator line
         separator = tk.Frame(status_frame, height=1, bg="#3e3e3e")
         separator.pack(fill=tk.X, pady=10)
         
     def _create_control_buttons(self, parent):
-        """创建控制按钮"""
+        """Create control buttons"""
         control_frame = tk.Frame(parent, bg=self.bg_color)
         control_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # API切换按钮
-        self.api_switch_btn = tk.Button(
+        # Select model button
+        self.model_select_btn = tk.Button(
             control_frame,
-            text="切换API",
-            command=self._show_api_switch_dialog,
-            bg=self.accent_color,
+            text=BUTTONS["select_model"],
+            command=self._show_model_select_dialog,
+            bg="#2196F3",
             fg="white",
-            font=("Arial", 10),
+            font=("Arial", 10, "bold"),
             relief=tk.FLAT,
             padx=15,
             pady=5,
             cursor="hand2"
         )
-        self.api_switch_btn.pack(side=tk.LEFT, padx=5)
+        self.model_select_btn.pack(side=tk.LEFT, padx=5)
         
-        # 记忆管理按钮
+        # Set API Key button
+        self.api_key_btn = tk.Button(
+            control_frame,
+            text=BUTTONS["set_api"],
+            command=self._show_api_key_dialog,
+            bg="#4CAF50",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief=tk.FLAT,
+            padx=15,
+            pady=5,
+            cursor="hand2"
+        )
+        self.api_key_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Memory management button
         self.memory_btn = tk.Button(
             control_frame,
-            text="记忆管理",
+            text=BUTTONS["memory"],
             command=self._show_memory_dialog,
             bg=self.memory_color,
             fg="white",
@@ -154,10 +179,10 @@ class AdvancedFloatingChatUI:
         )
         self.memory_btn.pack(side=tk.LEFT, padx=5)
         
-        # 清空对话按钮
+        # Clear button
         clear_btn = tk.Button(
             control_frame,
-            text="清空",
+            text=BUTTONS["clear"],
             command=self._clear_chat,
             bg="#2d2d2d",
             fg="white",
@@ -170,12 +195,12 @@ class AdvancedFloatingChatUI:
         clear_btn.pack(side=tk.RIGHT, padx=5)
         
     def _create_chat_display(self, parent):
-        """创建聊天显示区域"""
-        # 创建框架
+        """Create chat display area"""
+        # Create frame
         chat_frame = tk.Frame(parent, bg=self.bg_color)
         chat_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        # 创建滚动文本框
+        # Create scrolled text box
         self.chat_display = scrolledtext.ScrolledText(
             chat_frame,
             wrap=tk.WORD,
@@ -189,21 +214,21 @@ class AdvancedFloatingChatUI:
         )
         self.chat_display.pack(fill=tk.BOTH, expand=True)
         
-        # 配置标签
+        # Configure tags
         self.chat_display.tag_config("user", foreground=self.accent_color, font=("Arial", 10, "bold"))
         self.chat_display.tag_config("assistant", foreground=self.success_color, font=("Arial", 10, "bold"))
         self.chat_display.tag_config("system", foreground=self.error_color, font=("Arial", 9, "italic"))
         self.chat_display.tag_config("memory", foreground=self.memory_color, font=("Arial", 9, "italic"))
         
-        # 显示欢迎消息
+        # Display welcome message
         self._display_welcome_message()
         
     def _create_input_area(self, parent):
-        """创建输入区域"""
+        """Create input area"""
         input_frame = tk.Frame(parent, bg=self.bg_color)
         input_frame.pack(fill=tk.X)
         
-        # 输入框
+        # Input box
         self.input_text = tk.Text(
             input_frame,
             height=3,
@@ -218,17 +243,17 @@ class AdvancedFloatingChatUI:
         )
         self.input_text.pack(fill=tk.X, pady=(0, 10))
         
-        # 绑定快捷键
+        # Bind shortcut key
         self.input_text.bind("<Control-Return>", lambda e: self._send_message())
         
-        # 按钮框架
+        # Button frame
         button_frame = tk.Frame(input_frame, bg=self.bg_color)
         button_frame.pack(fill=tk.X)
         
-        # 发送按钮
+        # Send button
         send_btn = tk.Button(
             button_frame,
-            text="发送 (Ctrl+Enter)",
+            text="Send (Ctrl+Enter)",
             command=self._send_message,
             bg=self.accent_color,
             fg="white",
@@ -241,45 +266,28 @@ class AdvancedFloatingChatUI:
         send_btn.pack(side=tk.RIGHT)
         
     def _display_welcome_message(self):
-        """显示欢迎消息"""
-        welcome_msg = """
-=================================
-欢迎使用 CAFA (Context Auto Feed Agent)
-=================================
-
-功能特性:
-• 智能API切换 - 点击"切换API"按钮选择服务
-• 记忆功能 - 点击"记忆管理"查看和管理记忆
-• 上下文感知对话
-• 实时状态监控
-
-快捷键:
-• Ctrl+Enter - 发送消息
-
-开始对话吧！
-=================================
-"""
-        self.chat_display.insert(tk.END, welcome_msg, "system")
+        """Display welcome message"""
+        self.chat_display.insert(tk.END, MAIN_UI["welcome_message"], "system")
         self.chat_display.see(tk.END)
         
     def _check_all_services(self):
-        """检查所有服务状态"""
-        # 在后台线程中检查
+        """Check all service status"""
+        # Check in background thread
         threading.Thread(target=self._check_services_thread, daemon=True).start()
         
     def _check_services_thread(self):
-        """检查服务状态的线程"""
-        # 检查API服务器
+        """Thread for checking service status"""
+        # Check API server
         api_ok = self._check_api_server()
         
-        # 检查记忆服务器
+        # Check memory server
         memory_ok = self._check_memory_server()
         
-        # 更新UI
+        # Update UI
         self.root.after(0, self._update_service_status, api_ok, memory_ok)
         
     def _check_api_server(self):
-        """检查API服务器"""
+        """Check API server"""
         try:
             response = requests.get(f"{self.server_url}/health", timeout=5)
             if response.status_code == 200:
@@ -290,7 +298,7 @@ class AdvancedFloatingChatUI:
         return False
         
     def _check_memory_server(self):
-        """检查记忆服务器"""
+        """Check memory server"""
         try:
             response = requests.get(f"{self.memory_url}/docs", timeout=5)
             if response.status_code == 200:
@@ -302,148 +310,228 @@ class AdvancedFloatingChatUI:
         return False
         
     def _update_service_status(self, api_ok, memory_ok):
-        """更新服务状态显示"""
-        # 更新API状态
+        """Update service status display"""
+        # Update API status
         if api_ok:
             model = self.server_info.get('model', 'unknown')
             provider = self.server_info.get('provider', 'unknown')
             self.api_status_label.config(
-                text=f"API: {provider}/{model}",
+                text=STATUS["api_connected"].format(provider=provider, model=model),
                 fg=self.success_color
             )
         else:
             self.api_status_label.config(
-                text="API: 未连接",
+                text=STATUS["api_not_connected"],
                 fg=self.error_color
             )
             
-        # 更新记忆状态
+        # Update memory status
         if memory_ok:
             self.memory_status_label.config(
-                text="记忆: 已启用",
+                text=STATUS["memory_enabled"],
                 fg=self.success_color
             )
         else:
             self.memory_status_label.config(
-                text="记忆: 未启用",
+                text=STATUS["memory_not_enabled"],
                 fg=self.error_color
             )
             
-    def _show_api_switch_dialog(self):
-        """显示API切换对话框"""
-        # 创建对话框
+    def _show_api_key_dialog(self):
+        """Show API key input dialog"""
+        # Create dialog
         dialog = tk.Toplevel(self.root)
-        dialog.title("API服务切换")
-        dialog.geometry("550x500")
+        dialog.title(API_KEY_DIALOG["title"])
+        dialog.geometry("600x500")
         dialog.configure(bg=self.bg_color)
         dialog.resizable(False, False)
         
-        # 居中对话框
+        # Center dialog
         dialog.transient(self.root)
         dialog.grab_set()
         
-        # 主框架
+        # Main frame
         main_frame = tk.Frame(dialog, bg=self.bg_color, padx=20, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # 标题
+        # Title
         title_label = tk.Label(
             main_frame,
-            text="选择API服务",
+            text=API_KEY_DIALOG["title"],
             font=("Arial", 16, "bold"),
             fg=self.accent_color,
             bg=self.bg_color
         )
         title_label.pack(pady=(0, 20))
         
-        # 检测结果框架
-        detection_frame = tk.LabelFrame(
+        # Instruction text
+        info_label = tk.Label(
             main_frame,
-            text="服务检测结果",
-            font=("Arial", 12, "bold"),
+            text=API_KEY_DIALOG["subtitle"],
+            font=("Arial", 10),
+            fg="#858585",
+            bg=self.bg_color
+        )
+        info_label.pack(pady=(0, 15))
+        
+        # API Key input area
+        input_frame = tk.LabelFrame(
+            main_frame,
+            text=API_KEY_DIALOG["input_label"],
+            font=("Arial", 11, "bold"),
             fg=self.text_color,
             bg=self.bg_color,
             labelanchor=tk.NW
         )
-        detection_frame.pack(fill=tk.X, pady=(0, 20))
+        input_frame.pack(fill=tk.X, pady=(0, 20))
         
-        # 检测各个服务
-        services = self._detect_all_services()
+        # API Key input box
+        api_key_entry = tk.Entry(
+            input_frame,
+            font=("Arial", 10),
+            bg="#2d2d2d",
+            fg=self.text_color,
+            relief=tk.FLAT,
+            show="*"  # Hide by default
+        )
+        api_key_entry.pack(fill=tk.X, padx=10, pady=10)
         
-        for service in services:
-            service_frame = tk.Frame(detection_frame, bg=self.bg_color)
-            service_frame.pack(fill=tk.X, padx=10, pady=5)
-            
-            status_symbol = "●" if service['available'] else "○"
-            status_color = self.success_color if service['available'] else self.error_color
-            
-            status_label = tk.Label(
-                service_frame,
-                text=f"{status_symbol} {service['name']}: {service['status']}",
-                font=("Arial", 10),
-                fg=status_color,
-                bg=self.bg_color
-            )
-            status_label.pack(anchor=tk.W)
-            
-        # 选择框架
-        selection_frame = tk.LabelFrame(
+        # Show/Hide key button
+        show_var = tk.BooleanVar(value=False)
+        
+        def toggle_show():
+            if show_var.get():
+                api_key_entry.config(show="")
+                show_btn.config(text=BUTTONS["hide_key"])
+            else:
+                api_key_entry.config(show="*")
+                show_btn.config(text=BUTTONS["show_key"])
+        
+        show_btn = tk.Button(
+            input_frame,
+            text=BUTTONS["show_key"],
+            command=lambda: [show_var.set(not show_var.get()), toggle_show()],
+            bg="#2d2d2d",
+            fg="white",
+            font=("Arial", 9),
+            relief=tk.FLAT,
+            padx=10,
+            pady=3
+        )
+        show_btn.pack(padx=10, pady=(0, 10))
+        
+        # Detection result area
+        result_frame = tk.LabelFrame(
             main_frame,
-            text="选择要使用的API",
-            font=("Arial", 12, "bold"),
+            text=API_KEY_DIALOG["result_label"],
+            font=("Arial", 11, "bold"),
             fg=self.text_color,
             bg=self.bg_color,
             labelanchor=tk.NW
         )
-        selection_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        result_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
         
-        # API选项
-        self.selected_api_var = tk.StringVar()
+        result_text = scrolledtext.ScrolledText(
+            result_frame,
+            height=8,
+            font=("Arial", 9),
+            bg="#2d2d2d",
+            fg=self.text_color,
+            wrap=tk.WORD,
+            relief=tk.FLAT
+        )
+        result_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        result_text.insert(tk.END, API_KEY_DIALOG["initial_text"])
+        result_text.config(state=tk.DISABLED)
         
-        for i, service in enumerate(services):
-            if not service.get('selectable', True):
-                continue
-                
-            radio_frame = tk.Frame(selection_frame, bg=self.bg_color)
-            radio_frame.pack(fill=tk.X, padx=10, pady=5)
-            
-            radio = tk.Radiobutton(
-                radio_frame,
-                text=service['name'],
-                variable=self.selected_api_var,
-                value=service['url'],
-                font=("Arial", 11),
-                fg=self.text_color,
-                bg=self.bg_color,
-                selectcolor=self.accent_color,
-                activebackground=self.bg_color,
-                activeforeground=self.text_color,
-                state="normal" if service['available'] else "disabled"
-            )
-            radio.pack(anchor=tk.W)
-            
-            # 描述
-            desc_label = tk.Label(
-                radio_frame,
-                text=f"  {service['description']}",
-                font=("Arial", 9),
-                fg="#858585" if service['available'] else "#666666",
-                bg=self.bg_color
-            )
-            desc_label.pack(anchor=tk.W)
-            
-            # 设置默认选择
-            if i == 0 and service['available']:
-                self.selected_api_var.set(service['url'])
-                
-        # 按钮框架
+        # Button area
         button_frame = tk.Frame(main_frame, bg=self.bg_color)
         button_frame.pack(fill=tk.X)
         
-        # 取消按钮
+        # Detect button
+        def detect_api_key():
+            api_key = api_key_entry.get().strip()
+            
+            if not api_key:
+                messagebox.showwarning(MESSAGES["empty_input"], MESSAGES["enter_api_key"])
+                return
+            
+            # Call detection API
+            try:
+                response = requests.post(
+                    f"{self.server_url}/test_api_key",
+                    json={"api_key": api_key},
+                    timeout=5
+                )
+                
+                result_text.config(state=tk.NORMAL)
+                result_text.delete("1.0", tk.END)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if data.get("valid"):
+                        provider_name = data.get("provider_display_name", data.get("provider", "unknown"))
+                        confidence = data.get("confidence", 0) * 100
+                        
+                        result_text.insert(tk.END, API_KEY_DIALOG["format_valid"], "success")
+                        result_text.insert(tk.END, API_KEY_DIALOG["detected_provider"].format(provider=provider_name))
+                        result_text.insert(tk.END, API_KEY_DIALOG["confidence"].format(confidence=confidence))
+                        
+                        if data.get("description"):
+                            result_text.insert(tk.END, API_KEY_DIALOG["description"].format(description=data['description']))
+                        
+                        if data.get("base_url"):
+                            result_text.insert(tk.END, API_KEY_DIALOG["api_url"].format(base_url=data['base_url']))
+                        
+                        if data.get("default_model"):
+                            result_text.insert(tk.END, API_KEY_DIALOG["default_model"].format(model=data['default_model']))
+                        
+                        if data.get("supported_models"):
+                            models = data['supported_models'][:5]
+                            result_text.insert(tk.END, API_KEY_DIALOG["supported_models"])
+                            for model in models:
+                                result_text.insert(tk.END, API_KEY_DIALOG["model_item"].format(model=model))
+                            if len(data['supported_models']) > 5:
+                                result_text.insert(tk.END, API_KEY_DIALOG["model_count"].format(
+                                    count=len(data['supported_models'])))
+                        
+                        if data.get("warning"):
+                            result_text.insert(tk.END, API_KEY_DIALOG["warning"].format(warning=data['warning']), "warning")
+                    else:
+                        result_text.insert(tk.END, API_KEY_DIALOG["validation_failed"].format(
+                            error=data.get('error', 'Unknown error')), "error")
+                else:
+                    result_text.insert(tk.END, API_KEY_DIALOG["request_failed"].format(
+                        status_code=response.status_code), "error")
+                
+                result_text.config(state=tk.DISABLED)
+                
+            except requests.exceptions.Timeout:
+                messagebox.showerror(MESSAGES["timeout"], MESSAGES["timeout_msg"])
+            except requests.exceptions.ConnectionError:
+                messagebox.showerror(MESSAGES["connection_failed"], MESSAGES["connection_failed_msg"])
+            except Exception as e:
+                messagebox.showerror(MESSAGES["error"], MESSAGES["error_occurred"].format(error=str(e)))
+        
+        detect_btn = tk.Button(
+            button_frame,
+            text=BUTTONS["detect"],
+            command=detect_api_key,
+            bg="#FF9800",
+            fg="white",
+            font=("Arial", 10),
+            relief=tk.FLAT,
+            padx=20,
+            pady=8,
+            cursor="hand2"
+        )
+        detect_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Cancel button
         cancel_btn = tk.Button(
             button_frame,
-            text="取消",
+            text=BUTTONS["cancel"],
             command=dialog.destroy,
             bg="#2d2d2d",
             fg="white",
@@ -455,11 +543,54 @@ class AdvancedFloatingChatUI:
         )
         cancel_btn.pack(side=tk.RIGHT, padx=5)
         
-        # 确定按钮
+        # Confirm button (Set API Key)
+        def set_api_key():
+            api_key = api_key_entry.get().strip()
+            
+            if not api_key:
+                messagebox.showwarning(MESSAGES["empty_input"], MESSAGES["enter_api_key"])
+                return
+            
+            try:
+                response = requests.post(
+                    f"{self.server_url}/set_api_key",
+                    json={"api_key": api_key},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if data.get("success"):
+                        provider_name = data.get("provider_display_name", data.get("provider", "unknown"))
+                        messagebox.showinfo(
+                            API_KEY_DIALOG["set_success"],
+                            API_KEY_DIALOG["set_success"].format(
+                                provider=provider_name,
+                                model=data.get('model', 'N/A')
+                            )
+                        )
+                        dialog.destroy()
+                        
+                        # Recheck service status
+                        self._check_all_services()
+                    else:
+                        messagebox.showerror(API_KEY_DIALOG["set_failed"], data.get("error", "Unknown error"))
+                else:
+                    data = response.json()
+                    messagebox.showerror(API_KEY_DIALOG["set_failed"], data.get("error", f"HTTP {response.status_code}"))
+                    
+            except requests.exceptions.Timeout:
+                messagebox.showerror(MESSAGES["timeout"], MESSAGES["request_timeout"])
+            except requests.exceptions.ConnectionError:
+                messagebox.showerror(MESSAGES["connection_failed"], MESSAGES["cannot_connect"])
+            except Exception as e:
+                messagebox.showerror(MESSAGES["error"], MESSAGES["error_occurred"].format(error=str(e)))
+        
         confirm_btn = tk.Button(
             button_frame,
-            text="确定",
-            command=lambda: self._perform_api_switch(dialog),
+            text=BUTTONS["confirm_and_set"],
+            command=set_api_key,
             bg=self.accent_color,
             fg="white",
             font=("Arial", 10, "bold"),
@@ -470,132 +601,253 @@ class AdvancedFloatingChatUI:
         )
         confirm_btn.pack(side=tk.RIGHT, padx=5)
         
-    def _detect_all_services(self):
-        """检测所有服务"""
-        services = []
-        
-        # 1. 本地模型服务器 (端口5000)
-        local_ok = False
-        try:
-            response = requests.get("http://localhost:5000/health", timeout=3)
-            local_ok = response.status_code == 200
-        except:
-            pass
-            
-        services.append({
-            'name': '本地模型服务器 (Gemma)',
-            'url': 'http://localhost:5000',
-            'status': '运行中' if local_ok else '未运行',
-            'available': local_ok,
-            'description': '使用本地Gemma模型，无需API Key',
-            'selectable': True
-        })
-        
-        # 2. 在线API服务器 (端口5001)
-        online_ok = False
-        try:
-            response = requests.get("http://localhost:5001/health", timeout=3)
-            online_ok = response.status_code == 200
-        except:
-            pass
-            
-        services.append({
-            'name': '在线API服务器 (OpenAI)',
-            'url': 'http://localhost:5001',
-            'status': '运行中' if online_ok else '未运行',
-            'available': online_ok,
-            'description': '使用OpenAI API，需要API Key',
-            'selectable': True
-        })
-        
-        # 3. 记忆服务器 (端口8000)
-        memory_ok = False
-        try:
-            response = requests.get("http://localhost:8000/docs", timeout=3)
-            memory_ok = response.status_code == 200
-        except:
-            pass
-            
-        services.append({
-            'name': '记忆服务器',
-            'url': 'http://localhost:8000',
-            'status': '运行中' if memory_ok else '未运行',
-            'available': memory_ok,
-            'description': '提供记忆存储和检索功能',
-            'selectable': False
-        })
-        
-        return services
-        
-    def _perform_api_switch(self, dialog):
-        """执行API切换"""
-        selected_url = self.selected_api_var.get()
-        
-        if not selected_url:
-            messagebox.showwarning("未选择", "请选择一个API服务！")
-            return
-            
-        # 更新服务器URL
-        self.server_url = selected_url
-        
-        # 关闭对话框
-        dialog.destroy()
-        
-        # 重新检查服务状态
-        self._check_all_services()
-        
-        # 显示切换成功消息
-        self._display_system_message(f"已切换到: {selected_url}")
-        
-    def _show_memory_dialog(self):
-        """显示记忆管理对话框"""
-        if not self.memory_enabled:
-            messagebox.showwarning(
-                "记忆功能未启用",
-                "记忆服务器未运行！\n\n请启动记忆服务器:\npython run_memory_api.py"
-            )
-            return
-            
-        # 创建对话框
+        # Configure text tag colors
+        result_text.tag_config("success", foreground=self.success_color)
+        result_text.tag_config("error", foreground=self.error_color)
+        result_text.tag_config("warning", foreground="#FF9800")
+    
+    def _show_model_select_dialog(self):
+        """Show model selection dialog (simplified version)"""
+        # Create dialog
         dialog = tk.Toplevel(self.root)
-        dialog.title("记忆管理")
-        dialog.geometry("600x500")
+        dialog.title(MODEL_SELECTION["title"])
+        dialog.geometry("500x400")
         dialog.configure(bg=self.bg_color)
+        dialog.resizable(False, False)
         
-        # 居中对话框
+        # Center dialog
         dialog.transient(self.root)
         dialog.grab_set()
         
-        # 主框架
+        # Main frame
         main_frame = tk.Frame(dialog, bg=self.bg_color, padx=20, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # 标题
+        # Title
         title_label = tk.Label(
             main_frame,
-            text="记忆管理",
+            text=MODEL_SELECTION["title"],
+            font=("Arial", 16, "bold"),
+            fg=self.accent_color,
+            bg=self.bg_color
+        )
+        title_label.pack(pady=(0, 15))
+        
+        # Instruction text
+        info_label = tk.Label(
+            main_frame,
+            text=MODEL_SELECTION["subtitle"],
+            font=("Arial", 10),
+            fg="#858585",
+            bg=self.bg_color
+        )
+        info_label.pack(pady=(0, 20))
+        
+        # Detect service status
+        local_ok = self._check_service("http://localhost:5000/health")
+        online_ok = self._check_service("http://localhost:5001/health")
+        
+        # Service selection variable
+        self.selected_service_var = tk.StringVar(value=self.server_url)
+        
+        # Local model option
+        local_frame = tk.Frame(main_frame, bg="#2d2d2d", relief=tk.FLAT)
+        local_frame.pack(fill=tk.X, pady=10)
+        
+        local_radio = tk.Radiobutton(
+            local_frame,
+            text="",
+            variable=self.selected_service_var,
+            value="http://localhost:5000",
+            bg="#2d2d2d",
+            activebackground="#2d2d2d",
+            selectcolor="#2d2d2d",
+            state="normal" if local_ok else "disabled"
+        )
+        local_radio.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        local_info_frame = tk.Frame(local_frame, bg="#2d2d2d")
+        local_info_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, pady=15)
+        
+        status_symbol = "🟢" if local_ok else "🔴"
+        local_title = tk.Label(
+            local_info_frame,
+            text=f"{status_symbol} {MODEL_SELECTION['local_title']}",
+            font=("Arial", 12, "bold"),
+            fg=self.success_color if local_ok else self.error_color,
+            bg="#2d2d2d"
+        )
+        local_title.pack(anchor=tk.W)
+        
+        local_desc_text = MODEL_SELECTION['local_running'] if local_ok else MODEL_SELECTION['local_not_running']
+        local_desc = tk.Label(
+            local_info_frame,
+            text=local_desc_text,
+            font=("Arial", 9),
+            fg="#b0b0b0" if local_ok else "#666666",
+            bg="#2d2d2d",
+            justify=tk.LEFT
+        )
+        local_desc.pack(anchor=tk.W, pady=(5, 0))
+        
+        # Online API option
+        online_frame = tk.Frame(main_frame, bg="#2d2d2d", relief=tk.FLAT)
+        online_frame.pack(fill=tk.X, pady=10)
+        
+        online_radio = tk.Radiobutton(
+            online_frame,
+            text="",
+            variable=self.selected_service_var,
+            value="http://localhost:5001",
+            bg="#2d2d2d",
+            activebackground="#2d2d2d",
+            selectcolor="#2d2d2d",
+            state="normal" if online_ok else "disabled"
+        )
+        online_radio.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        online_info_frame = tk.Frame(online_frame, bg="#2d2d2d")
+        online_info_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, pady=15)
+        
+        status_symbol = "🟢" if online_ok else "🔴"
+        online_title = tk.Label(
+            online_info_frame,
+            text=f"{status_symbol} {MODEL_SELECTION['online_title']}",
+            font=("Arial", 12, "bold"),
+            fg=self.success_color if online_ok else self.error_color,
+            bg="#2d2d2d"
+        )
+        online_title.pack(anchor=tk.W)
+        
+        online_desc_text = MODEL_SELECTION['online_running'] if online_ok else MODEL_SELECTION['online_not_running']
+        online_desc = tk.Label(
+            online_info_frame,
+            text=online_desc_text,
+            font=("Arial", 9),
+            fg="#b0b0b0" if online_ok else "#666666",
+            bg="#2d2d2d",
+            justify=tk.LEFT
+        )
+        online_desc.pack(anchor=tk.W, pady=(5, 0))
+        
+        # Warning message
+        if not local_ok and not online_ok:
+            warning_label = tk.Label(
+                main_frame,
+                text=MODEL_SELECTION["no_service_warning"],
+                font=("Arial", 10),
+                fg=self.error_color,
+                bg=self.bg_color
+            )
+            warning_label.pack(pady=(10, 0))
+        
+        # Button area
+        button_frame = tk.Frame(main_frame, bg=self.bg_color)
+        button_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(20, 0))
+        
+        # Cancel button
+        cancel_btn = tk.Button(
+            button_frame,
+            text=BUTTONS["cancel"],
+            command=dialog.destroy,
+            bg="#2d2d2d",
+            fg="white",
+            font=("Arial", 10),
+            relief=tk.FLAT,
+            padx=20,
+            pady=8,
+            cursor="hand2"
+        )
+        cancel_btn.pack(side=tk.RIGHT, padx=5)
+        
+        # Confirm button
+        def confirm_selection():
+            selected_url = self.selected_service_var.get()
+            if selected_url:
+                self.server_url = selected_url
+                dialog.destroy()
+                self._check_all_services()
+                
+                # Display switch success message
+                service_name = "Local Model" if "5000" in selected_url else "Online API"
+                self._display_system_message(MODEL_SELECTION["switch_success"].format(
+                    service_name=service_name,
+                    url=selected_url
+                ))
+            else:
+                messagebox.showwarning(MESSAGES["no_selection"], MESSAGES["select_service"])
+        
+        confirm_btn = tk.Button(
+            button_frame,
+            text=BUTTONS["confirm"],
+            command=confirm_selection,
+            bg=self.accent_color,
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief=tk.FLAT,
+            padx=20,
+            pady=8,
+            cursor="hand2"
+        )
+        confirm_btn.pack(side=tk.RIGHT, padx=5)
+    
+    def _check_service(self, url):
+        """Check single service status"""
+        try:
+            response = requests.get(url, timeout=2)
+            return response.status_code == 200
+        except:
+            return False
+        
+    def _show_memory_dialog(self):
+        """Show memory management dialog"""
+        if not self.memory_enabled:
+            messagebox.showwarning(
+                MEMORY_DIALOG["memory_not_enabled"],
+                MEMORY_DIALOG["memory_not_enabled_msg"]
+            )
+            return
+            
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(MEMORY_DIALOG["title"])
+        dialog.geometry("600x500")
+        dialog.configure(bg=self.bg_color)
+        
+        # Center dialog
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Main frame
+        main_frame = tk.Frame(dialog, bg=self.bg_color, padx=20, pady=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Title
+        title_label = tk.Label(
+            main_frame,
+            text=MEMORY_DIALOG["title"],
             font=("Arial", 16, "bold"),
             fg=self.memory_color,
             bg=self.bg_color
         )
         title_label.pack(pady=(0, 20))
         
-        # 创建Notebook
+        # Create Notebook
         notebook = ttk.Notebook(main_frame)
         notebook.pack(fill=tk.BOTH, expand=True)
         
-        # 配置样式
+        # Configure style
         style = ttk.Style()
         style.configure('TNotebook', background=self.bg_color)
         style.configure('TNotebook.Tab', background=self.bg_color, foreground=self.text_color)
         
-        # 标签页1: 存储记忆
+        # Tab 1: Store Memory
         store_frame = tk.Frame(notebook, bg=self.bg_color)
-        notebook.add(store_frame, text="存储记忆")
+        notebook.add(store_frame, text=MEMORY_DIALOG["store_tab"])
         
         store_label = tk.Label(
             store_frame,
-            text="输入要存储的记忆:",
+            text=MEMORY_DIALOG["store_label"],
             font=("Arial", 10),
             fg=self.text_color,
             bg=self.bg_color
@@ -614,7 +866,7 @@ class AdvancedFloatingChatUI:
         
         store_btn = tk.Button(
             store_frame,
-            text="存储",
+            text=BUTTONS["store"],
             command=self._store_memory,
             bg=self.memory_color,
             fg="white",
@@ -626,13 +878,13 @@ class AdvancedFloatingChatUI:
         )
         store_btn.pack()
         
-        # 标签页2: 检索记忆
+        # Tab 2: Recall Memory
         recall_frame = tk.Frame(notebook, bg=self.bg_color)
-        notebook.add(recall_frame, text="检索记忆")
+        notebook.add(recall_frame, text=MEMORY_DIALOG["recall_tab"])
         
         recall_label = tk.Label(
             recall_frame,
-            text="输入查询关键词:",
+            text=MEMORY_DIALOG["recall_label"],
             font=("Arial", 10),
             fg=self.text_color,
             bg=self.bg_color
@@ -653,7 +905,7 @@ class AdvancedFloatingChatUI:
         
         search_btn = tk.Button(
             search_frame,
-            text="检索",
+            text=MEMORY_DIALOG["recall_button"],
             command=self._recall_memory,
             bg=self.memory_color,
             fg="white",
@@ -674,9 +926,9 @@ class AdvancedFloatingChatUI:
         )
         self.memory_results.pack(fill=tk.BOTH, expand=True)
         
-        # 标签页3: 记忆统计
+        # Tab 3: Memory Stats
         stats_frame = tk.Frame(notebook, bg=self.bg_color)
-        notebook.add(stats_frame, text="记忆统计")
+        notebook.add(stats_frame, text=MEMORY_DIALOG["stats_tab"])
         
         self.memory_stats = scrolledtext.ScrolledText(
             stats_frame,
@@ -689,7 +941,7 @@ class AdvancedFloatingChatUI:
         
         refresh_stats_btn = tk.Button(
             stats_frame,
-            text="刷新统计",
+            text=BUTTONS["refresh_stats"],
             command=self._refresh_memory_stats,
             bg=self.accent_color,
             fg="white",
@@ -701,15 +953,15 @@ class AdvancedFloatingChatUI:
         )
         refresh_stats_btn.pack()
         
-        # 初始化统计
+        # Initialize stats
         self._refresh_memory_stats()
         
     def _store_memory(self):
-        """存储记忆"""
+        """Store memory"""
         memory_text = self.memory_input.get("1.0", tk.END).strip()
         
         if not memory_text:
-            messagebox.showwarning("输入为空", "请输入要存储的记忆内容！")
+            messagebox.showwarning(MESSAGES["empty_input"], MESSAGES["enter_memory"])
             return
             
         try:
@@ -720,20 +972,20 @@ class AdvancedFloatingChatUI:
             )
             
             if response.status_code == 200:
-                messagebox.showinfo("成功", "记忆已成功存储！")
+                messagebox.showinfo(MEMORY_DIALOG["store_success"], MEMORY_DIALOG["store_success_msg"])
                 self.memory_input.delete("1.0", tk.END)
             else:
-                messagebox.showerror("错误", f"存储失败: {response.status_code}")
+                messagebox.showerror(MESSAGES["error"], f"Storage failed: {response.status_code}")
                 
         except Exception as e:
-            messagebox.showerror("错误", f"存储异常: {str(e)}")
+            messagebox.showerror(MESSAGES["error"], f"Storage exception: {str(e)}")
             
     def _recall_memory(self):
-        """检索记忆"""
+        """Recall memory"""
         query = self.memory_query.get().strip()
         
         if not query:
-            messagebox.showwarning("输入为空", "请输入查询关键词！")
+            messagebox.showwarning(MESSAGES["empty_input"], MESSAGES["enter_keywords"])
             return
             
         try:
@@ -750,67 +1002,52 @@ class AdvancedFloatingChatUI:
                 self.memory_results.delete("1.0", tk.END)
                 
                 if matches:
-                    self.memory_results.insert(tk.END, f"找到 {len(matches)} 个匹配记忆:\n\n")
+                    self.memory_results.insert(tk.END, MEMORY_DIALOG["matches_found"].format(count=len(matches)))
                     
                     for i, match in enumerate(matches, 1):
                         text = match.get('text', 'N/A')
                         similarity = match.get('similarity', 0)
                         self.memory_results.insert(
                             tk.END,
-                            f"{i}. [{similarity:.3f}] {text}\n\n"
+                            MEMORY_DIALOG["match_item"].format(index=i, similarity=similarity, text=text)
                         )
                 else:
-                    self.memory_results.insert(tk.END, "未找到匹配的记忆。")
+                    self.memory_results.insert(tk.END, MEMORY_DIALOG["no_matches"])
             else:
-                messagebox.showerror("错误", f"检索失败: {response.status_code}")
+                messagebox.showerror(MESSAGES["error"], f"Recall failed: {response.status_code}")
                 
         except Exception as e:
-            messagebox.showerror("错误", f"检索异常: {str(e)}")
+            messagebox.showerror(MESSAGES["error"], f"Recall exception: {str(e)}")
             
     def _refresh_memory_stats(self):
-        """刷新记忆统计"""
+        """Refresh memory statistics"""
         self.memory_stats.delete("1.0", tk.END)
         
-        stats_text = f"""
-记忆服务统计信息
-=================================
-
-服务地址: {self.memory_url}
-状态: {'已启用' if self.memory_enabled else '未启用'}
-
-API端点:
-• 存储记忆: POST /store
-• 检索记忆: GET /recall
-• 记忆衰减: POST /decay
-
-文档:
-• Swagger UI: {self.memory_url}/docs
-• ReDoc: {self.memory_url}/redoc
-
-功能特性:
-✓ 智能语义搜索
-✓ 记忆权重管理
-✓ 自动记忆衰减
-✓ 相似度匹配
-
-=================================
-"""
+        stats_text = MEMORY_DIALOG["stats_title"]
+        stats_text += MEMORY_DIALOG["stats_url"].format(url=self.memory_url)
+        stats_text += MEMORY_DIALOG["stats_status"].format(
+            status="Enabled" if self.memory_enabled else "Not enabled"
+        )
+        stats_text += MEMORY_DIALOG["stats_endpoints"]
+        stats_text += MEMORY_DIALOG["stats_docs"].format(url=self.memory_url)
+        stats_text += MEMORY_DIALOG["stats_features"]
+        
         self.memory_stats.insert(tk.END, stats_text)
         
     def _send_message(self):
-        """发送消息"""
+        """Send message"""
         message = self.input_text.get("1.0", tk.END).strip()
         
         if not message:
             return
             
-        # 清空输入框
+        # Clear input box
         self.input_text.delete("1.0", tk.END)
         
-        # 显示用户消息
-        self._display_message("用户", message, "user")
+        # Display user message
+        self._display_message(STATUS["user_prefix"], message, "user")
         
-        # 在后台线程中发送请求
+        # Send request in background thread
         threading.Thread(
             target=self._send_request_thread,
             args=(message,),
@@ -818,28 +1055,31 @@ API端点:
         ).start()
         
     def _send_request_thread(self, message):
-        """发送请求的线程"""
+        """Thread for sending request"""
         try:
-            # 如果启用了记忆，先检索相关记忆
+            # If memory is enabled, retrieve relevant memories first
             memory_context = ""
             if self.memory_enabled:
                 try:
                     response = requests.get(
                         f"{self.memory_url}/recall",
                         params={"query": message},
-                        timeout=3
+                        timeout=30  # Longer timeout for embedding model
                     )
                     if response.status_code == 200:
                         data = response.json()
                         matches = data.get("matches", [])
                         if matches:
                             memory_texts = [m.get('text', '') for m in matches[:3]]
-                            memory_context = "\n相关记忆: " + "; ".join(memory_texts)
+                            memory_context = CHAT["relevant_memory"].format(
+                                memories="; ".join(memory_texts)
+                            )
                             self.root.after(0, self._display_memory_context, memory_context)
-                except:
-                    pass
+                            self.root.after(0, self._display_system_message, f"🧠 Found {len(matches)} relevant memories")
+                except Exception as e:
+                    self.root.after(0, self._display_system_message, f"⚠️ Memory recall error: {str(e)}")
             
-            # 发送到API服务器
+            # Send to API server
             response = requests.post(
                 f"{self.server_url}/chat",
                 json={
@@ -851,34 +1091,38 @@ API端点:
             
             if response.status_code == 200:
                 data = response.json()
-                assistant_message = data.get('response', '无响应')
+                assistant_message = data.get('response', 'No response')
                 
-                # 显示助手消息
-                self.root.after(0, self._display_message, "助手", assistant_message, "assistant")
+                # Display assistant message
+                self.root.after(0, self._display_message, STATUS["assistant_prefix"], assistant_message, "assistant")
                 
-                # 存储到记忆
+                # Store to memory
                 if self.memory_enabled:
                     try:
-                        requests.post(
+                        mem_response = requests.post(
                             f"{self.memory_url}/store",
                             params={"text": f"Q:{message} A:{assistant_message}"},
-                            timeout=3
+                            timeout=30  # Longer timeout for embedding model
                         )
-                    except:
-                        pass
+                        if mem_response.status_code == 200:
+                            self.root.after(0, self._display_system_message, "💾 Conversation saved to memory")
+                        else:
+                            self.root.after(0, self._display_system_message, f"⚠️ Failed to save memory (Status {mem_response.status_code})")
+                    except Exception as e:
+                        self.root.after(0, self._display_system_message, f"⚠️ Memory storage error: {str(e)}")
             else:
-                error_msg = f"请求失败: HTTP {response.status_code}"
+                error_msg = CHAT["request_failed"].format(status_code=response.status_code)
                 self.root.after(0, self._display_system_message, error_msg)
                 
         except requests.exceptions.Timeout:
-            self.root.after(0, self._display_system_message, "请求超时")
+            self.root.after(0, self._display_system_message, CHAT["request_timeout"])
         except requests.exceptions.ConnectionError:
-            self.root.after(0, self._display_system_message, "无法连接到服务器")
+            self.root.after(0, self._display_system_message, CHAT["no_server"])
         except Exception as e:
-            self.root.after(0, self._display_system_message, f"错误: {str(e)}")
+            self.root.after(0, self._display_system_message, MESSAGES["error_occurred"].format(error=str(e)))
             
     def _display_message(self, sender, message, tag):
-        """显示消息"""
+        """Display message"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.chat_display.insert(tk.END, f"\n[{timestamp}] ", "system")
         self.chat_display.insert(tk.END, f"{sender}:\n", tag)
@@ -886,33 +1130,35 @@ API端点:
         self.chat_display.see(tk.END)
         
     def _display_system_message(self, message):
-        """显示系统消息"""
+        """Display system message"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.chat_display.insert(tk.END, f"\n[{timestamp}] ", "system")
-        self.chat_display.insert(tk.END, f"系统: {message}\n", "system")
+        self.chat_display.insert(tk.END, f"{STATUS['system_prefix']}{message}\n", "system")
         self.chat_display.see(tk.END)
         
     def _display_memory_context(self, context):
-        """显示记忆上下文"""
+        """Display memory context"""
         self.chat_display.insert(tk.END, f"{context}\n", "memory")
         self.chat_display.see(tk.END)
         
     def _clear_chat(self):
-        """清空聊天"""
+        """Clear chat"""
         self.chat_display.delete("1.0", tk.END)
         self._display_welcome_message()
         
     def run(self):
-        """运行UI"""
+        """Run UI"""
         self.root.mainloop()
 
+
 def main():
-    """主函数"""
+    """Main function"""
     print("[INFO] Starting Advanced Floating UI...")
     print("[INFO] Features: API Switch + Memory Management")
     
     app = AdvancedFloatingChatUI()
     app.run()
+
 
 if __name__ == "__main__":
     main()

@@ -53,25 +53,27 @@ def load_config():
     """Load API configuration from environment variables or config file"""
     global config
     
-    # Read configuration from environment variables
+    # No longer automatically load API Key, wait for user input
     config["provider"] = os.getenv("LLM_PROVIDER", "openai")
-    config["api_key"] = os.getenv("LLM_API_KEY")
+    config["api_key"] = None  # Default None, requires user to set manually
     config["base_url"] = os.getenv("LLM_BASE_URL")
     config["model"] = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
     
-    # If no API Key, try reading from file
-    if not config["api_key"]:
-        try:
-            with open("api_config.json", "r", encoding="utf-8") as f:
-                file_config = json.load(f)
-                config.update(file_config)
-        except FileNotFoundError:
-            pass
+    # Can load other configs from file, but not API Key
+    try:
+        with open("api_config.json", "r", encoding="utf-8") as f:
+            file_config = json.load(f)
+            # Only load non-sensitive configs
+            for key in ["model", "max_tokens", "temperature", "top_p"]:
+                if key in file_config:
+                    config[key] = file_config[key]
+    except FileNotFoundError:
+        pass
     
     print(f"[INFO] Configuration loaded:")
     print(f"   Provider: {config['provider']}")
     print(f"   Model: {config['model']}")
-    print(f"   API Key: {'Set' if config['api_key'] else 'Not set'}")
+    print(f"   API Key: {'Not set - waiting for user input' if not config['api_key'] else 'Set'}")
 
 def initialize_server():
     """Initialize server"""
@@ -103,7 +105,8 @@ class OnlineLLMClient:
             "anthropic": "https://api.anthropic.com/v1",
             "google": "https://generativelanguage.googleapis.com/v1beta",
             "qwen": "https://dashscope.aliyuncs.com/api/v1",
-            "wenxin": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop"
+            "wenxin": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop",
+            "ollama": "http://localhost:11434"
         }
         return urls.get(self.provider, "https://api.openai.com/v1")
     
@@ -119,6 +122,8 @@ class OnlineLLMClient:
             return self._call_qwen(prompt, **kwargs)
         elif self.provider == "wenxin":
             return self._call_wenxin(prompt, **kwargs)
+        elif self.provider == "ollama":
+            return self._call_ollama(prompt, **kwargs)
         else:
             return self._call_custom(prompt, **kwargs)
     
@@ -128,6 +133,8 @@ class OnlineLLMClient:
             yield from self._call_openai_stream(prompt, **kwargs)
         elif self.provider == "anthropic":
             yield from self._call_anthropic_stream(prompt, **kwargs)
+        elif self.provider == "ollama":
+            yield from self._call_ollama_stream(prompt, **kwargs)
         else:
             # For APIs that don't support streaming, return complete response
             response = self.generate_response(prompt, **kwargs)
@@ -363,6 +370,84 @@ class OnlineLLMClient:
         else:
             raise Exception(f"ERNIE Bot API error: {response.status_code} - {response.text}")
     
+    def _call_ollama(self, prompt: str, **kwargs) -> str:
+        """Call Ollama API (OpenAI-compatible format)"""
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": kwargs.get("model", config["model"]),
+            "messages": self._build_messages(prompt),
+            "temperature": kwargs.get("temperature", config["temperature"]),
+            "stream": False
+        }
+        
+        # Add optional parameters if provided
+        if "top_p" in kwargs:
+            data["top_p"] = kwargs["top_p"]
+        if "max_tokens" in kwargs:
+            data["num_predict"] = kwargs["max_tokens"]
+        
+        response = requests.post(
+            f"{self.base_url}/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=60  # Ollama can be slower on first run
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result["choices"][0]["message"]["content"]
+        else:
+            raise Exception(f"Ollama API error: {response.status_code} - {response.text}")
+    
+    def _call_ollama_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:
+        """Call Ollama streaming API (OpenAI-compatible format)"""
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": kwargs.get("model", config["model"]),
+            "messages": self._build_messages(prompt),
+            "temperature": kwargs.get("temperature", config["temperature"]),
+            "stream": True
+        }
+        
+        # Add optional parameters if provided
+        if "top_p" in kwargs:
+            data["top_p"] = kwargs["top_p"]
+        if "max_tokens" in kwargs:
+            data["num_predict"] = kwargs["max_tokens"]
+        
+        response = requests.post(
+            f"{self.base_url}/v1/chat/completions",
+            headers=headers,
+            json=data,
+            stream=True,
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode('utf-8')
+                    if line.startswith('data: '):
+                        data_str = line[6:]
+                        if data_str.strip() == '[DONE]':
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            if 'choices' in data and len(data['choices']) > 0:
+                                delta = data['choices'][0].get('delta', {})
+                                if 'content' in delta:
+                                    yield delta['content']
+                        except json.JSONDecodeError:
+                            continue
+        else:
+            yield f"Error: {response.status_code} - {response.text}"
+    
     def _call_custom(self, prompt: str, **kwargs) -> str:
         """Call custom API"""
         headers = {
@@ -418,12 +503,16 @@ def initialize_llm_client():
     """Initialize LLM client"""
     global llm_client
     
-    if not config["api_key"]:
+    # Ollama doesn't need a real API key
+    if not config["api_key"] and config["provider"] != "ollama":
         raise Exception("API Key not set")
+    
+    # For Ollama, use a dummy API key
+    api_key = config["api_key"] if config["api_key"] else "ollama"
     
     llm_client = OnlineLLMClient(
         provider=config["provider"],
-        api_key=config["api_key"],
+        api_key=api_key,
         base_url=config["base_url"]
     )
     
@@ -442,6 +531,56 @@ def health_check():
         "total_conversations": conversation_count + 1,
         "total_tokens_generated": total_tokens_generated
     })
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    """Chat endpoint (supports 'message' parameter)"""
+    if llm_client is None:
+        return jsonify({"error": "LLM client not initialized"}), 503
+    
+    try:
+        data = request.json
+        # Support both 'message' and 'prompt' parameters
+        message = data.get('message') or data.get('prompt')
+        
+        if not message:
+            return jsonify({"error": "Missing 'message' or 'prompt' parameter"}), 400
+        
+        # Optional parameters
+        max_tokens = data.get('max_new_tokens', config["max_tokens"])
+        temperature = data.get('temperature', config["temperature"])
+        top_p = data.get('top_p', config["top_p"])
+        
+        print(f"\n[INFO] Chat request: {message[:50]}...")
+        
+        # Generate response
+        with model_lock:
+            response = llm_client.generate_response(
+                prompt=message,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p
+            )
+        
+        # Update conversation history
+        conversation_history.append({"role": "user", "content": message})
+        conversation_history.append({"role": "assistant", "content": response})
+        
+        # Update statistics
+        global total_tokens_generated
+        total_tokens_generated += len(response.split())
+        
+        return jsonify({
+            "response": response,
+            "message": message,
+            "timestamp": time.time(),
+            "provider": config["provider"],
+            "model": config["model"]
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Chat error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -511,7 +650,7 @@ def generate_stream():
                 
                 full_response = ""
                 
-                # Streaming生成
+                # Streaming generation
                 with model_lock:
                     for token in llm_client.generate_stream(
                         prompt=prompt,
@@ -613,64 +752,159 @@ def api_key_status():
 
 @app.route('/set_api_key', methods=['POST'])
 def set_api_key():
-    """Set API key"""
+    """
+    Set API key (enhanced version)
+    Automatically detect provider and configure
+    """
     try:
+        # Import API key detector
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+        from src.api_key_detector import APIKeyDetector
+        
         data = request.json
         api_key = data.get('api_key', '').strip()
+        manual_provider = data.get('provider')  # User can manually specify provider
+        manual_base_url = data.get('base_url')  # User can manually specify base_url
         
         if not api_key:
-            return jsonify({"error": "API key is required"}), 400
+            return jsonify({"error": "API key cannot be empty"}), 400
         
+        # Automatically detect provider
+        detection_result = APIKeyDetector.validate_and_detect(api_key)
+        
+        if not detection_result["valid"]:
+            return jsonify({"error": detection_result["error"]}), 400
+        
+        # Get detected provider info
+        detected_provider = detection_result.get("provider")
+        provider_info = detection_result.get("provider_info")
+        confidence = detection_result.get("confidence", 0.0)
+        
+        # If user manually specified provider, use it
+        if manual_provider:
+            detected_provider = manual_provider
+            provider_info = APIKeyDetector.get_provider_info(manual_provider)
+        
+        # Update configuration
         config['api_key'] = api_key
+        config['provider'] = detected_provider
         
-        # Reinitialize client with new API key
+        # Set base_url and model
+        if provider_info:
+            if manual_base_url:
+                config['base_url'] = manual_base_url
+            elif provider_info.base_url:
+                config['base_url'] = provider_info.base_url
+            
+            # For Ollama, try to detect available models
+            if detected_provider == "ollama":
+                try:
+                    import requests
+                    response = requests.get(f"{config.get('base_url', 'http://localhost:11434')}/api/tags", timeout=5)
+                    if response.status_code == 200:
+                        models = response.json().get("models", [])
+                        if models:
+                            # Use the first available model
+                            config['model'] = models[0]['name']
+                            print(f"[INFO] Auto-detected Ollama model: {config['model']}")
+                        else:
+                            config['model'] = provider_info.default_model
+                    else:
+                        config['model'] = provider_info.default_model
+                except:
+                    config['model'] = provider_info.default_model
+            else:
+                config['model'] = provider_info.default_model
+        
+        # Try to initialize client
         try:
             initialize_llm_client()
-            return jsonify({"message": "API key set successfully"})
+            
+            response_data = {
+                "success": True,
+                "message": "API key set successfully",
+                "provider": detected_provider,
+                "confidence": confidence,
+                "base_url": config.get('base_url'),
+                "model": config.get('model')
+            }
+            
+            if provider_info:
+                response_data["provider_display_name"] = provider_info.display_name
+                response_data["supported_models"] = provider_info.supported_models
+                response_data["description"] = provider_info.description
+            
+            if "warning" in detection_result:
+                response_data["warning"] = detection_result["warning"]
+            
+            return jsonify(response_data)
+            
         except Exception as e:
-            return jsonify({"error": f"Failed to initialize with API key: {str(e)}"}), 400
+            return jsonify({
+                "error": f"Initialization failed: {str(e)}",
+                "provider": detected_provider,
+                "suggestion": "Please check if API key is correct, or manually specify provider"
+            }), 400
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/test_api_key', methods=['POST'])
 def test_api_key():
-    """Test API key validity"""
+    """
+    Test API key (enhanced version)
+    Automatically detect provider and validate
+    """
     try:
+        # Import API key detector
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+        from src.api_key_detector import APIKeyDetector
+        
         data = request.json
         api_key = data.get('api_key', '').strip()
-        test_mode = data.get('test', False)
         
         if not api_key:
-            return jsonify({"valid": False, "error": "API key is required"}), 400
+            return jsonify({"valid": False, "error": "API key cannot be empty"}), 400
         
-        # Temporarily set the API key for testing
-        original_api_key = config['api_key']
-        config['api_key'] = api_key
+        # Perform format detection first
+        detection_result = APIKeyDetector.validate_and_detect(api_key)
         
-        try:
-            # Initialize client to test the API key
-            initialize_llm_client()
-            
-            # If we get here, the API key is valid
-            if test_mode:
-                # Restore original API key for test mode
-                config['api_key'] = original_api_key
-                if original_api_key:
-                    initialize_llm_client()
-            
-            return jsonify({"valid": True, "message": "API key is valid"})
-            
-        except Exception as e:
-            # Restore original API key on error
-            config['api_key'] = original_api_key
-            if original_api_key:
-                try:
-                    initialize_llm_client()
-                except:
-                    pass
-            
-            return jsonify({"valid": False, "error": str(e)})
+        if not detection_result["valid"]:
+            return jsonify({
+                "valid": False,
+                "error": detection_result["error"],
+                "stage": "format_validation"
+            }), 400
+        
+        # Get detection results
+        detected_provider = detection_result.get("provider")
+        provider_info = detection_result.get("provider_info")
+        confidence = detection_result.get("confidence", 0.0)
+        
+        # Return detection results (without actually calling API)
+        response_data = {
+            "valid": True,
+            "provider": detected_provider,
+            "confidence": confidence,
+            "stage": "format_validation"
+        }
+        
+        if provider_info:
+            response_data.update({
+                "provider_display_name": provider_info.display_name,
+                "base_url": provider_info.base_url,
+                "default_model": provider_info.default_model,
+                "supported_models": provider_info.supported_models,
+                "description": provider_info.description
+            })
+        
+        if "warning" in detection_result:
+            response_data["warning"] = detection_result["warning"]
+        
+        if "message" in detection_result:
+            response_data["message"] = detection_result["message"]
+        
+        return jsonify(response_data)
         
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)}), 500
@@ -685,12 +919,10 @@ if __name__ == "__main__":
     # Initialize server
     initialize_server()
     
-    # Initialize LLM client
-    try:
-        initialize_llm_client()
-    except Exception as e:
-        print(f"⚠️  LLM client initialization failed: {e}")
-        print("   Server will still start, but API Key needs to be configured manually")
+    # No longer auto-initialize LLM client, wait for user to input API Key
+    print("⚠️  Waiting for user to input API key...")
+    print("   Please set API key via POST /set_api_key endpoint")
+    print("   Or test API key format via POST /test_api_key endpoint")
     
     # Start Flask server on port 5001 to avoid conflict with local model server
     print(f"\n[INFO] Starting online API server on port 5001...")
