@@ -9,7 +9,7 @@ An intelligent AI agent powered by Qwen3-VL with autonomous tool usage capabilit
 
 ## ✨ Features
 
-- 🤖 **Qwen3-VL-7B**: Advanced vision-language model with structured output
+- 🤖 **Qwen3-VL-30B-A3B-Thinking**: Advanced vision-language model with chain-of-thought reasoning (MoE: 30B total, 3.3B active)
 - 🔧 **Autonomous Tool Usage**: Agent automatically decides when to use tools
 - 🔍 **Web Search**: Google search integration for current information
 - 📄 **Web Reader**: Extract and read content from any webpage
@@ -224,7 +224,10 @@ for prompt in prompts:
 
 ## 🛠️ Technology Stack
 
-- **Primary Model**: Qwen2-VL-7B-Instruct (upgradable to 30B)
+- **Primary Model**: Qwen3-VL-30B-A3B-Thinking-FP8
+  - MoE architecture (30B total, 3.3B active)
+  - Chain-of-thought reasoning (Thinking mode)
+  - Vision-language support
 - **Agent Framework**: qwen-agent with structured function calling
 - **Tools**: 
   - Web scraping: BeautifulSoup4, requests
@@ -282,22 +285,28 @@ Person/
 
 ## 🎯 Model Specifications
 
-### Primary: Qwen2-VL-7B-Instruct (4-bit)
-- **Memory**: ~8-10GB VRAM
-- **Loading**: 2-4 minutes
-- **Quality**: High with vision support
-- **Tool Calling**: Native structured output
+### Primary: Qwen3-VL-30B-A3B-Thinking-FP8
+- **Architecture**: Mixture of Experts (MoE)
+  - Total parameters: 30B
+  - Active parameters: ~3.3B (efficient!)
+- **Memory**: ~12-16GB VRAM (FP8 quantization)
+- **Loading**: 3-5 minutes
+- **Quality**: Excellent with chain-of-thought reasoning
+- **Tool Calling**: Native structured output with qwen-agent
 - **Output**: Up to 2000 tokens
-- **Special**: Vision-language model (future-ready for images)
+- **Special Features**:
+  - Vision-Language support (images)
+  - Thinking mode: `<think>...</think>` blocks for transparency
+  - MoE efficiency: Only activates 3.3B params per inference
 
-### Upgrade Path: Qwen2-VL-30B-Instruct
-- **Memory**: ~16-20GB VRAM (4-bit)
-- **Quality**: Highest with vision
-- **Status**: Available for RTX 5090
+**Why MoE is Perfect for Agents:**
+- Small active footprint (3.3B) = fast inference
+- Large total capacity (30B) = smart decisions
+- Thinking mode = visible reasoning process
 
 ### Legacy: Gemma Models
-- Gemma-3-27B Q4: ~16GB VRAM, no tool support
-- Gemma-3-12B 8-bit: ~6-8GB VRAM, no tool support
+- Gemma-3-27B Q4: ~16GB VRAM, no tool support, no vision
+- Still available via `model_server.py` for non-agent use
 
 ---
 

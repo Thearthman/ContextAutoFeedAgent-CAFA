@@ -1,10 +1,10 @@
 # MEMORY.md - Internal Project Knowledge Base
 
 **Last Updated**: October 2025  
-**Primary Model**: Qwen2-VL-7B-Instruct with 4-bit quantization (agent-enabled)  
+**Primary Model**: Qwen3-VL-30B-A3B-Thinking-FP8 (MoE: 30B total, 3.3B active)  
 **Legacy Model**: Gemma-3-27B-IT with 4-bit quantization (no tool support)  
 **Development Mode**: Server/Client architecture for rapid iteration  
-**New Feature**: Autonomous tool usage with qwen-agent framework
+**Key Features**: Autonomous tool usage + Chain-of-thought reasoning + Vision-language
 
 ## 🎯 Purpose
 
@@ -45,25 +45,33 @@ cd "/mnt/p/Work/Personal/Person"
 
 ## 🔧 Model Technical Details
 
-### Qwen2-VL-7B-Instruct Q4 Configuration (Primary - Agent System)
+### Qwen3-VL-30B-A3B-Thinking-FP8 Configuration (Primary - Agent System)
 ```python
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_use_double_quant=True
-)
+# FP8 quantization is native to the model
+# MoE architecture: 30B total params, only 3.3B active per inference
+MODEL_NAME = "Qwen/Qwen3-VL-30B-A3B-Thinking-FP8"
 ```
-- **Model**: `Qwen/Qwen2-VL-7B-Instruct`
-- **VRAM usage**: ~8-10GB (4-bit quantization)
-- **Loading time**: 2-4 minutes
-- **Token speed**: ~20-30 tokens/sec (estimated)
+- **Model**: `Qwen/Qwen3-VL-30B-A3B-Thinking-FP8`
+- **Architecture**: Mixture of Experts (MoE)
+  - Total parameters: 30.5B
+  - Active parameters: ~3.3B (per forward pass)
+  - Result: Large model capacity, small compute footprint
+- **VRAM usage**: ~12-16GB (FP8 native quantization)
+- **Loading time**: 3-5 minutes
+- **Token speed**: ~15-25 tokens/sec (estimated, MoE efficient)
 - **Max tokens**: 2000 tokens configured
 - **Special features**: 
-  - Vision-language model (supports images)
-  - Native structured output for tool calling
-  - Compatible with qwen-agent framework
-- **Upgrade path**: Can switch to Qwen2-VL-30B-Instruct (~16-20GB VRAM)
+  - **Vision-Language (VL)**: Supports image input (multimodal)
+  - **Thinking mode**: Outputs `<think>...</think>` blocks for chain-of-thought reasoning
+  - **MoE efficiency**: Only 3.3B params active despite 30B total
+  - **FP8 quantization**: Native low-precision for speed
+  - **Structured output**: Native function calling for qwen-agent
+- **Why this model**:
+  - Excellent reasoning for complex tool orchestration
+  - Transparent decision-making (thinking blocks)
+  - Efficient (3.3B active = faster than loading 7B dense model)
+  - Vision-ready for future screenshot/diagram understanding
+  - Model generation consistency (Qwen3) - no refactoring needed
 
 ### Agent Framework: qwen-agent
 - **Purpose**: Structured function calling and tool orchestration

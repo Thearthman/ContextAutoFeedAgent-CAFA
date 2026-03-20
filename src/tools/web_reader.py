@@ -1,23 +1,12 @@
-"""
-Web page content extraction tool.
-"""
-
 import requests
 from bs4 import BeautifulSoup
-from typing import Optional
+from langchain_core.tools import Tool
 
-
-def read_webpage(url: str, max_length: int = 5000) -> str:
+def read_webpage(url: str) -> str:
     """
     Fetch and extract main content from a webpage.
-    
-    Args:
-        url: The URL of the webpage to read
-        max_length: Maximum content length in characters (default: 5000)
-    
-    Returns:
-        Cleaned text content from the webpage
     """
+    print(f"\n[Tool: read_webpage] Fetching content from: {url}...")
     try:
         # Fetch the webpage
         headers = {
@@ -57,6 +46,7 @@ def read_webpage(url: str, max_length: int = 5000) -> str:
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         text = '\n'.join(lines)
         
+        max_length = 5000
         # Truncate if too long
         if len(text) > max_length:
             text = text[:max_length] + f"\n\n[Content truncated at {max_length} characters]"
@@ -72,25 +62,9 @@ def read_webpage(url: str, max_length: int = 5000) -> str:
     except Exception as e:
         return f"Unexpected error reading webpage: {str(e)}"
 
-
-# Tool definition for qwen-agent
-TOOL_DEFINITION = {
-    "name": "read_webpage",
-    "description": "Read and extract the main text content from a webpage. Use this after getting URLs from search results to read the actual content of web pages.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "url": {
-                "type": "string",
-                "description": "The URL of the webpage to read"
-            },
-            "max_length": {
-                "type": "integer",
-                "description": "Maximum content length in characters (default: 5000)",
-                "default": 5000
-            }
-        },
-        "required": ["url"]
-    }
-}
-
+def get_web_reader_tool():
+    return Tool(
+        name="read_webpage",
+        description="Read and extract the main text content from a webpage. Use this after getting URLs from search results to read the actual content of web pages. Input is the URL.",
+        func=read_webpage
+    )

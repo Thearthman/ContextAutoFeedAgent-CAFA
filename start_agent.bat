@@ -1,0 +1,4 @@
+@echo off
+echo Starting llama-server...
+@REM start "LLM Server" "D:\Program Files\llama-cuda-13.1\llama-server.exe" -m "D:\Program Files\llama-cuda-13.1\models\Qwen3-VL-30B-A3B-Thinking-Q4_K_M.gguf" --mmproj "D:\Program Files\llama-cuda-13.1\models\mmproj-BF16.gguf" --n-gpu-layers 99 --ctx-size 16384 --cache-type-k q8_0 --cache-type-v q8_0 --port 8080 --parallel 2
+start "LLM Server" "D:\Program Files\llama-cuda-13.1\llama-server.exe" -m "D:\Program Files\llama-cuda-13.1\models\Qwen3VL-8B-Thinking-Q4_K_M.gguf" --mmproj "D:\Program Files\llama-cuda-13.1\models\mmproj-Qwen3VL-8B-Thinking-F16.gguf" --n-gpu-layers 99 --ctx-size 131072 --cache-type-k q8_0 --cache-type-v q8_0 --port 8080 --parallel 4
